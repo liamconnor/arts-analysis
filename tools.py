@@ -213,7 +213,7 @@ def read_singlepulse(fn, max_rows=None, beam=None):
         # Check if amber has compacted, in which case 
         # there are two extra rows
         if len(A[0]) > 7:
-            if len(A[0])==9:
+            if len(A[0])==8:
                 # beam batch sample integration_step compacted_integration_steps time DM compacted_DMs SNR
                 beamno, dm, sig, tt, downsample = A[:, 0], A[:,-3], A[:,-1], A[:, -4], A[:, 3]
             elif len(A[0])==10:
@@ -571,7 +571,10 @@ class SNR_Tools:
             widths = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500]
 
         for ii in widths:
-            mf = np.ones([ii])
+            if true_filter is None:
+                mf = np.ones([ii])
+            else:
+                mf = true_filter
             data_mf = scipy.correlate(data, mf)
             snr_ = self.calc_snr_amber(data_mf)
 
