@@ -546,7 +546,7 @@ class SNR_Tools:
 
         return (data.max() - med) / sig
 
-    def calc_snr_matchedfilter(self, data, widths=None):
+    def calc_snr_matchedfilter(self, data, widths=None, true_filter=None):
         """ Calculate the S/N of pulse profile after 
         trying 9 rebinnings.
 
