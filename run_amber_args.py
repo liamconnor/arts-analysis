@@ -41,7 +41,7 @@ def execute_amber(fn, nbatch=10800, hdr=460,
 		-channel_bandwidth %f -min_freq %f -channels %d \
 		-samples %d -sampling_time %f" % str_args_fil
 
-	str_args_step1 = (general, rfi_option, snr, fn, conf_dir, output_prefix)
+	str_args_step1 = (general, rfi_option, snr, fil, conf_dir, output_prefix)
 	amber_step1="%s %s %s %s -opencl_device 1 \
 				 -device_name ARTS_step1_81.92us_1400MHz \
 				 -integration_steps %s/integration_steps_x1.conf \
