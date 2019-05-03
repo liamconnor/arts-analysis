@@ -62,28 +62,21 @@ def execute_amber(fn, nbatch=10800, hdr=460,
 
 	print("Done")
 
+def run_amber_from_dir(dir):
+
+	files = glob.glob(dir+'/*.fil')
+	files.sort()
+
+	outdir = './'
+
+	for fn in files:
+		execute_amber(fn)
+	    outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber_tester%s_%s' % (rfi, snr)
+	            
+	    print('%s %s %s %s %s' % (script, fn, rfi, snr, outfn))
+
+	    os.system('%s %s %s %s %s' % (script, fn, snr, outfn, rfi))
+	    os.system('cat %s*step*.trigger > %s.trigger' % (outfn, outfn))
+
 dir = sys.argv[1]
-
-files = glob.glob(dir+'/*.fil')
-files.sort()
-
-outdir = './dany_tests/'
-outdir = './'
-script = '/home/arts/connor/software/arts-analysis/arts-analysis/run_amber.sh'
-
-combis = [('-rfim','momad'),('','momad'),('-rfim','mom_sigmacut'),('','mom_sigmacut')]
-combis = [('','mom_sigmacut')]
-
-for fn in files[:]:
-    for algo in combis[:]:
-        execute_amber(fn)    	
-	exit()
-        rfi = algo[0]
-        snr = algo[1]
-        outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber_tester%s_%s' % (rfi, snr)
-                
-        print('%s %s %s %s %s' % (script, fn, rfi, snr, outfn))
-
-        os.system('%s %s %s %s %s' % (script, fn, snr, outfn, rfi))
-        os.system('cat %s*step*.trigger > %s.trigger' % (outfn, outfn))
-
+run_amber_from_dir(dir)
