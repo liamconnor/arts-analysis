@@ -48,7 +48,10 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     thread_step3 = threading.Thread(target=os.system, args=[amber_step3])
 
     threads = []
-    thread.daemon = True
+    thread_step1.daemon = True
+    thread_step2.daemon = True
+    thread_step3.daemon = True
+
     threads.append(thread_step1)
     threads.append(thread_step2)
     threads.append(thread_step3)
