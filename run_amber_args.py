@@ -3,34 +3,7 @@ import sys
 
 import glob
 
-files = glob.glob('/home/oostrum/debug/full_output_TAB/filterbank/*.fil')
-files = glob.glob('../../injectfrb/injectfrb/data/simpulse_nfrb10_DM50-50_61sec_20190415-0839.fil')
-files = glob.glob(sys.argv[1])
-files.sort()
-
-#script = '/data1/rfi-tests-peryton/run_amber.sh'
-outdir = './dany_tests/'
-outdir = './'
-script = '/home/arts/connor/software/arts-analysis/arts-analysis/run_amber.sh'
-
-combis = [('-rfim','momad'),('','momad'),('-rfim','mom_sigmacut'),('','mom_sigmacut')]
-combis = [('','mom_sigmacut')]
-
-for fn in files[:]:
-    for algo in combis[:]:
-        rfi = algo[0]
-        snr = algo[1]
-        outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber_tester%s_%s' % (rfi, snr)
-                
-        print('%s %s %s %s %s' % (script, fn, rfi, snr, outfn))
-
-        os.system('%s %s %s %s %s' % (script, fn, snr, outfn, rfi))
-        os.system('cat %s*step*.trigger > %s.trigger' % (outfn, outfn))
-
-
-#!/bin/bash
-
-def execute_amber(file, nbatch=10800, hdr=362, 
+def execute_amber(file, nbatch=10800, hdr=460, 
 				  rfi_option="-rfim", snr="mom_sigmacut", snrmin=6,
 				  nchan=1536, pagesize=12500, chan_width=0.1953125, 
 				  min_freq=1249.700927734375, tsamp=8.192e-05, output_prefix="./"):
@@ -71,5 +44,29 @@ def execute_amber(file, nbatch=10800, hdr=362,
 
 	print("Done")
 
+files = glob.glob('/home/oostrum/debug/full_output_TAB/filterbank/*.fil')
+files = glob.glob('../../injectfrb/injectfrb/data/simpulse_nfrb10_DM50-50_61sec_20190415-0839.fil')
+files = glob.glob(sys.argv[1])
+files.sort()
 
+#script = '/data1/rfi-tests-peryton/run_amber.sh'
+outdir = './dany_tests/'
+outdir = './'
+script = '/home/arts/connor/software/arts-analysis/arts-analysis/run_amber.sh'
+
+combis = [('-rfim','momad'),('','momad'),('-rfim','mom_sigmacut'),('','mom_sigmacut')]
+combis = [('','mom_sigmacut')]
+
+for fn in files[:]:
+    for algo in combis[:]:
+		execute_amber(fn)    	
+		exit()
+        rfi = algo[0]
+        snr = algo[1]
+        outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber_tester%s_%s' % (rfi, snr)
+                
+        print('%s %s %s %s %s' % (script, fn, rfi, snr, outfn))
+
+        os.system('%s %s %s %s %s' % (script, fn, snr, outfn, rfi))
+        os.system('cat %s*step*.trigger > %s.trigger' % (outfn, outfn))
 
