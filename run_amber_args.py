@@ -62,12 +62,11 @@ def execute_amber(fn, nbatch=10800, hdr=460,
 
 	print("Done")
 
-files = glob.glob('/home/oostrum/debug/full_output_TAB/filterbank/*.fil')
-files = glob.glob('../../injectfrb/injectfrb/data/simpulse_nfrb10_DM50-50_61sec_20190415-0839.fil')
-files = glob.glob(sys.argv[1])
+dir = sys.argv[1]
+
+files = glob.glob(dir+'/*.fil')
 files.sort()
 
-#script = '/data1/rfi-tests-peryton/run_amber.sh'
 outdir = './dany_tests/'
 outdir = './'
 script = '/home/arts/connor/software/arts-analysis/arts-analysis/run_amber.sh'
