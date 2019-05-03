@@ -59,8 +59,8 @@ combis = [('','mom_sigmacut')]
 
 for fn in files[:]:
     for algo in combis[:]:
-		execute_amber(fn)    	
-		exit()
+        execute_amber(fn)    	
+	exit()
         rfi = algo[0]
         snr = algo[1]
         outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber_tester%s_%s' % (rfi, snr)
