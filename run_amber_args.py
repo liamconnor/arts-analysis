@@ -36,19 +36,17 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     str_args_step1 = (general, rfi_option, snr, fil, conf_dir, output_prefix)
     amber_step1="%s %s %s %s -opencl_device 1 -device_name ARTS_step1_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 32 -dm_first 0 -dm_step 0.2 -subbanding_dms 64 -subbanding_dm_first 0 -subbanding_dm_step 6.4 -output %s_step1" % str_args_step1
 
+    str_args_step2 = (general, rfi_option, snr, fil, conf_dir, output_prefix)
+    amber_step2="%s %s %s %s -opencl_device 1 -device_name ARTS_step1_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 32 -dm_first 0 -dm_step 0.2 -subbanding_dms 64 -subbanding_dm_first 409.6 -subbanding_dm_step 6.4 -output %s_step1" % str_args_step1
+
+    str_args_step3 = (general, rfi_option, snr, fil, conf_dir, output_prefix)
+    amber_step3="%s %s %s %s -opencl_device 1 -device_name ARTS_step1_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 32 -dm_first 0 -dm_step 0.2 -subbanding_dms 64 -subbanding_dm_first 819.2 -subbanding_dm_step 40.0 -output %s_step1" % str_args_step1
+
     os.system(amber_step1)
-    return
-
-    amber_step2="$general $rfi_option $snr $fil -opencl_device 2 -device_name ARTS_step2_81.92us_1400MHz -integration_steps $conf_dir/integration_steps_x1.conf -subbands 32 -dms 32 -dm_first 0 -dm_step 0.2 -subbanding_dms 64 -subbanding_dm_first 409.6 -subbanding_dm_step 6.4 -output ${output_prefix}_step2"
-    #amber_step3="$general $rfi_option $snr $fil -opencl_device 3 -device_name ARTS_step3_81.92us_1400MHz -integration_steps $conf_dir/integration_steps_x5.conf -subbands 32 -dms 32 -dm_first 0 -dm_step 0.5 -subbanding_dms 128 -subbanding_dm_first 819.2 -subbanding_dm_step 16.0 -output ${output_prefix}_step3 -downsampling -downsampling_factor 5"
-    amber_step3="$general $rfi_option $snr $fil -opencl_device 3 -device_name ARTS_step3_nodownsamp_81.92us_1400MHz -integration_steps $conf_dir/integration_steps_x1.conf -subbands 32 -dms 16 -dm_first 0 -dm_step 2.5 -subbanding_dms 64 -subbanding_dm_first 819.2 -subbanding_dm_step 40.0 -output ${output_prefix}_step3"
-
-    print("Starting AMBER on filterbank")
-    #$amber_step1 &
-    #$amber_step2 &
-    #$amber_step3 &
-
+    os.system(amber_step2)
+    os.system(amber_step3)
     print("Done")
+    return 
 
 def run_amber_from_dir(dir):
 
@@ -68,3 +66,9 @@ def run_amber_from_dir(dir):
 
 dir = sys.argv[1]
 run_amber_from_dir(dir)
+
+
+
+
+
+
