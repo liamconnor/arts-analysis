@@ -55,10 +55,10 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     threads.append(thread_step1)
     threads.append(thread_step2)
     threads.append(thread_step3)
+    
     thread_step1.start()
     thread_step2.start()
     thread_step3.start()
-
 
     # wait until all are done
     for thread in threads:
