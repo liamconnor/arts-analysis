@@ -1,6 +1,7 @@
 import os
 import sys
 
+import threading
 import glob
 
 def execute_amber(fn, nbatch=10800, hdr=460, 
@@ -42,9 +43,21 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     str_args_step3 = (general, rfi_option, snr, fil, conf_dir, output_prefix)
     amber_step3="%s %s %s %s -opencl_device 3 -device_name ARTS_step1_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 16 -dm_first 0 -dm_step 2.5 -subbanding_dms 64 -subbanding_dm_first 819.2 -subbanding_dm_step 40.0 -output %s_step3 &" % str_args_step1
 
-    os.system(amber_step1)
-    os.system(amber_step2)
-    os.system(amber_step3)
+    thread_step1 = threading.Thread(target=os.system, args=[amber_step1])
+    thread_step2 = threading.Thread(target=os.system, args=[amber_step2])
+    thread_step3 = threading.Thread(target=os.system, args=[amber_step3])
+
+    threads = []
+    thread.daemon = True
+    threads.append(thread_step1)
+    threads.append(thread_step2)
+    threads.append(thread_step3)
+    thread.start()
+
+    # wait until all are done
+    for thread in threads:
+        thread.join()
+
     print("Done")
     return 
 
