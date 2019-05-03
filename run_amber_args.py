@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 
 import threading
 import glob
@@ -65,7 +64,6 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     for thread in threads:
         thread.join()
 
-    time.sleep(30)
     print("Done")
     return 
 
