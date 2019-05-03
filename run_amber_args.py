@@ -19,9 +19,20 @@ def execute_amber(file, nbatch=10800, hdr=460,
 	else:
 	    print("Unknown SNR mode: $snr")
 
-	general="amber -opencl_platform 0 -sync -print -padding_file $conf_dir/padding.conf -zapped_channels $conf_dir/zapped_channels_1400.conf -integration_file $conf_dir/integration.conf -subband_dedispersion -dedispersion_stepone_file $conf_dir/dedispersion_stepone.conf -dedispersion_steptwo_file $conf_dir/dedispersion_steptwo.conf -threshold $snrmin -time_domain_sigma_cut -time_domain_sigma_cut_steps $conf_dir/tdsc_steps.conf -time_domain_sigma_cut_configuration $conf_dir/tdsc.conf -downsampling_configuration $conf_dir/downsampling.conf"
+	str_args_general = (conf_dir, conf_dir, conf_dir, conf_dir, conf_dir, snrmin, conf_dir, conf_dir)
+	general="amber -opencl_platform 0 -sync -print -padding_file \
+			 %s/padding.conf -zapped_channels %s/zapped_channels_1400.conf \
+			 -integration_file %s/integration.conf -subband_dedispersion \
+			 -dedispersion_stepone_file %s/dedispersion_stepone.conf \
+			 -dedispersion_steptwo_file %s/dedispersion_steptwo.conf \
+			 -threshold %d -time_domain_sigma_cut -time_domain_sigma_cut_steps \
+			 %s/tdsc_steps.conf -time_domain_sigma_cut_configuration %s/tdsc.conf \
+			 -downsampling_configuration $conf_dir/downsampling.conf" % str_args_general
 
-	fil="-sigproc -stream -header $hdr -data $file -batches $nbatch -channel_bandwidth $chan_width -min_freq $min_freq -channels $nchan -samples $pagesize -sampling_time $tsamp"
+	str_args_fil = (hdr, nbatch, chan_width, min_freq, nchan, pagesize, tsamp)
+	fil="-sigproc -stream -header %d -data $file -batches %d \
+		-channel_bandwidth %f -min_freq %f -channels %d \
+		-samples %d -sampling_time %f" % str_args_fil
 
 	str_args_step1 = (general, rfi_option, snr, fil, output_prefix)
 	amber_step1="%s %s %s %s -opencl_device 1 \
