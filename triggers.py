@@ -11,12 +11,12 @@ import h5py
 import glob
 import copy
 import optparse
-import logging 
+import logging
 
 from pypulsar.formats import filterbank
 
 import tools
-import plotter 
+import plotter
 
 def get_mask(rfimask, startsamp, N):
     """Return an array of boolean values to act as a mask
@@ -28,7 +28,7 @@ def get_mask(rfimask, startsamp, N):
             N: number of samples to read
 
         Output:
-            mask: 2D numpy array of boolean values. 
+            mask: 2D numpy array of boolean values.
                 True represents an element that should be masked.
     """
     sampnums = np.arange(startsamp, startsamp+N)
@@ -50,14 +50,14 @@ def get_single_trigger(fn_fil, fn_trig, row=0, ntime_plot=250):
     dm0, sig_cut, t0, downsamp = tools.read_singlepulse(fn_trig)
     dm0, sig_cut, t0, downsamp = dm0[row], sig_cut[row], t0[row], downsamp[row]
 
-    data, downsamp, downsamp_smear  = fil_trigger(fn_fil, dm0, t0, sig_cut, 
-                 ndm=50, mk_plot=False, downsamp=downsamp, 
+    data, downsamp, downsamp_smear  = fil_trigger(fn_fil, dm0, t0, sig_cut,
+                 ndm=50, mk_plot=False, downsamp=downsamp,
                  beamno='', fn_mask=None, nfreq_plot=32,
                  ntime_plot=ntime_plot,
                  cmap='RdBu', cand_no=1, multiproc=False,
                  rficlean=False, snr_comparison=-1,
                  outdir='./', sig_thresh_local=7.0)
- 
+
     return data, dm0, sig_cut, t0, downsamp, downsamp_smear
 
 def sys_temperature_bandpass(data):
@@ -118,16 +118,28 @@ def remove_noisy_channels(data, sigma_threshold=2, iters=10):
 
     return data
 
-def cleandata(data, threshold=3.0):
-    """ Take filterbank object and mask 
+def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
+              n_iter_time=3, n_iter_frequency=3, clean_type='time'):
+    """ Take filterbank object and mask
     RFI time samples with average spectrum.
 
     Parameters:
     ----------
-    data : 
+    data :
         filterbank data object
-    threshold : float 
+    threshold_time : float
         units of sigma
+    threshold_frequency : float
+        units of sigma
+    bin_size : int
+        quantization bin size
+    n_iter_time : int
+        Number of iteration for time cleaning
+    n_iter_frequency : int
+        Number of iteration for frequency cleaning
+    clean_type : str
+        type of cleaning to be done.
+        Accepted values: 'time', 'frequency', 'both'
 
     Returns:
     -------
@@ -135,38 +147,47 @@ def cleandata(data, threshold=3.0):
     """
     logging.info("Cleaning RFI")
 
-
+    # Clean in time
     #sys_temperature_bandpass(data.data)
     #remove_noisy_freq(data.data, 3)
     #remove_noisy_channels(data.data, sigma_threshold=2, iters=5)
+    if clean_type in ['time', 'both']:
+        for i in range(n_iter_time):
+            dfmean = np.mean(data.data, axis=0)
+            dtmean = np.mean(data.data, axis=-1)
 
-    dtmean = np.mean(data.data, axis=-1)
-    dfmean = np.mean(data.data, axis=0)
-    stdevf = np.std(dfmean)
-    medf = np.median(dfmean)
-    maskf = np.where(np.abs(dfmean - medf) > threshold*stdevf)[0]        
-    # remove bandpass by averaging over 16 ajdacent channels 
-#    dtmean_nobandpass = dtmean - dtmean.reshape(-1, 16).mean(-1).repeat(16)
-#    stdevt = np.std(dtmean_nobandpass)
-#    medt = np.median(dtmean_nobandpass)
+            # ('data.data', (1536, 265149), 'dfmean', (265149,), 'dtmean', (1536,))
 
-    # mask 3sigma outliers in both time and freq
-    
-#    maskt = np.where(np.abs(dtmean - medt) > 0.0*stdevt)[0]
+            stdevf = np.std(dfmean)
+            medf = np.median(dfmean)
+            maskf = np.where(np.abs(dfmean - medf) > threshold_time*stdevf)[0]
 
-    # replace with mean spectrum
-    data.data[:, maskf] = dtmean[:, None]*np.ones(len(maskf))[None]
-#    data.data[maskt] = 0#dfmean[None]*np.ones(len(maskt))[:, None]
+            # replace with mean spectrum
+            data.data[:, maskf] = dtmean[:, None]*np.ones(len(maskf))[None]
 
+    # Clean in frequency
+    # remove bandpass by averaging over bin_size ajdacent channels
+    if clean_type in ['frequency', 'both']:
+        for i in range(n_iter_frequency):
+            for i in range(data.data.shape[1]):
+                dtmean_nobandpass = data.data[:, i] - dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)
+                stdevt = np.std(dtmean_nobandpass)
+                medt = np.median(dtmean_nobandpass)
+                maskt = np.abs(dtmean_nobandpass - medt) > threshold_frequency*stdevt
+
+                # replace with mean bin values
+                data.data[maskt, i] = dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)[maskt]
     return data
 
-def fil_trigger(fn_fil, dm0, t0, sig_cut, 
-                 ndm=50, mk_plot=False, downsamp=1, 
+def fil_trigger(fn_fil, dm0, t0, sig_cut,
+                 ndm=50, mk_plot=False, downsamp=1,
                  beamno='', fn_mask=None, nfreq_plot=32,
                  ntime_plot=250,
                  cmap='RdBu', cand_no=1, multiproc=False,
                  rficlean=False, snr_comparison=-1,
-                 outdir='./', sig_thresh_local=5.0):
+                 outdir='./', sig_thresh_local=5.0,
+                 threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
+                 n_iter_time=3, n_iter_frequency=3, clean_type='time'):
     try:
         rfimask = np.loadtxt('/home/arts/ARTS-obs/amber_conf/zapped_channels_1400.conf')
         rfimask = rfimask.astype(int)
@@ -177,7 +198,7 @@ def fil_trigger(fn_fil, dm0, t0, sig_cut,
     SNRtools = tools.SNR_Tools()
     downsamp = min(4096, downsamp)
     rawdatafile = filterbank.filterbank(fn_fil)
-    dfreq_MHz = rawdatafile.header['foff']    
+    dfreq_MHz = rawdatafile.header['foff']
     mask = []
 
     dt = rawdatafile.header['tsamp']
@@ -197,16 +218,16 @@ def fil_trigger(fn_fil, dm0, t0, sig_cut,
     dms[0] = max(0, dms[0])
 
     global t_min, t_max
-    # if smearing timescale is < 4*pulse width, 
-    # downsample before dedispersion for speed 
+    # if smearing timescale is < 4*pulse width,
+    # downsample before dedispersion for speed
     downsamp_smear = max(1, int(downsamp*dt/tdm/2.))
     # ensure that it's not larger than pulse width
     downsamp_smear = int(min(downsamp, downsamp_smear))
     downsamp_res = int(downsamp//downsamp_smear)
     downsamp = int(downsamp_res*downsamp_smear)
     time_res = dt * downsamp
-    tplot = ntime_plot * downsamp 
-#    print("Width_full:%d  Width_smear:%d  Width_res: %d" % 
+    tplot = ntime_plot * downsamp
+#    print("Width_full:%d  Width_smear:%d  Width_res: %d" %
 #        (downsamp, downsamp_smear, downsamp_res))
 
     start_bin = int(t0/dt - ntime_plot*downsamp//2)
@@ -222,9 +243,9 @@ def fil_trigger(fn_fil, dm0, t0, sig_cut,
         t_max += extra
 
     t_min, t_max = int(t_min), int(t_max)
-    
+
     snr_max = 0
-    
+
     # Account for the pre-downsampling to speed up dedispersion
     t_min /= downsamp_smear
     t_max /= downsamp_smear
@@ -233,51 +254,52 @@ def fil_trigger(fn_fil, dm0, t0, sig_cut,
     data = rawdatafile.get_spectra(start_bin, chunksize)
 
     if rficlean is True:
-        data = cleandata(data)
-        data = cleandata(data)
-        data = cleandata(data)
+        data = cleandata(data, threshold_time, threshold_frequency, \
+                         bin_size, n_iter_time, n_iter_frequency, clean_type)
 
     return data, downsamp, downsamp_smear
 
-def proc_trigger(fn_fil, dm0, t0, sig_cut, 
-                 ndm=50, mk_plot=False, downsamp=1, 
+def proc_trigger(fn_fil, dm0, t0, sig_cut,
+                 ndm=50, mk_plot=False, downsamp=1,
                  beamno='', fn_mask=None, nfreq_plot=32,
                  ntime_plot=250,
                  cmap='RdBu', cand_no=1, multiproc=False,
                  rficlean=False, snr_comparison=-1,
-                 outdir='./', sig_thresh_local=5.0, 
-                 subtract_zerodm=False):
+                 outdir='./', sig_thresh_local=5.0,
+                 subtract_zerodm=False,
+                 threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
+                 n_iter_time=3, n_iter_frequency=3, clean_type='time'):
     """ Locate data within filterbank file (fn_fi)
-    at some time t0, and dedisperse to dm0, generating 
-    plots 
+    at some time t0, and dedisperse to dm0, generating
+    plots
 
     Parameters:
     ----------
-    fn_fil     : str 
+    fn_fil     : str
         name of filterbank file
-    dm0        : float 
+    dm0        : float
         trigger dm found by single pulse search software
-    t0         : float 
-        time in seconds where trigger was found 
-    sig_cut    : np.float 
+    t0         : float
+        time in seconds where trigger was found
+    sig_cut    : np.float
         sigma of detected trigger at (t0, dm0)
-    ndm        : int 
-        number of DMs to use in DM transform 
-    mk_plot    : bool 
-        make three-panel plots 
-    downsamp   : int 
-        factor by which to downsample in time. comes from searchsoft. 
-    beamno     : str 
-        beam number, for fig names 
-    nfreq_plot : int 
-        number of frequencies channels to plot 
+    ndm        : int
+        number of DMs to use in DM transform
+    mk_plot    : bool
+        make three-panel plots
+    downsamp   : int
+        factor by which to downsample in time. comes from searchsoft.
+    beamno     : str
+        beam number, for fig names
+    nfreq_plot : int
+        number of frequencies channels to plot
 
     Returns:
     -------
     full_dm_arr_downsamp : np.array
         data array with downsampled dm-transformed intensities
     full_freq_arr_downsamp : np.array
-        data array with downsampled freq-time intensities 
+        data array with downsampled freq-time intensities
     """
 
     try:
@@ -290,7 +312,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     SNRtools = tools.SNR_Tools()
     downsamp = min(4096, downsamp)
     rawdatafile = filterbank.filterbank(fn_fil)
-    dfreq_MHz = rawdatafile.header['foff']    
+    dfreq_MHz = rawdatafile.header['foff']
     mask = []
 
     dt = rawdatafile.header['tsamp']
@@ -312,18 +334,18 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     dms[0] = max(0, dms[0])
 
     global t_min, t_max
-    # if smearing timescale is < 4*pulse width, 
-    # downsample before dedispersion for speed 
+    # if smearing timescale is < 4*pulse width,
+    # downsample before dedispersion for speed
     downsamp_smear = max(1, int(downsamp*dt/tdm/2.))
     # ensure that it's not larger than pulse width
     downsamp_smear = int(min(downsamp, downsamp_smear))
     downsamp_res = int(downsamp//downsamp_smear)
     downsamp = int(downsamp_res*downsamp_smear)
     time_res = dt * downsamp
-    tplot = ntime_plot * downsamp 
-    logging.info("Width_full:%d  Width_smear:%d  Width_res: %d" % 
+    tplot = ntime_plot * downsamp
+    logging.info("Width_full:%d  Width_smear:%d  Width_res: %d" %
                  (downsamp, downsamp_smear, downsamp_res))
-#    print("Width_full:%d  Width_smear:%d  Width_res: %d" % 
+#    print("Width_full:%d  Width_smear:%d  Width_res: %d" %
 #        (downsamp, downsamp_smear, downsamp_res))
 
     start_bin = int(t0/dt - ntime_plot*downsamp//2)
@@ -339,9 +361,9 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         t_max += extra
 
     t_min, t_max = int(t_min), int(t_max)
-    
+
     snr_max = 0
-    
+
     # Account for the pre-downsampling to speed up dedispersion
     t_min /= downsamp_smear
     t_max /= downsamp_smear
@@ -357,18 +379,17 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     data.data[rfimask] = 0.
 
     if rficlean is True:
-        data = cleandata(data)
-        data = cleandata(data)
-        data = cleandata(data)
+        data = cleandata(data, threshold_time, threshold_frequency, bin_size, \
+                         n_iter_time, n_iter_frequency, clean_type)
 
     if subtract_zerodm:
         data.data -= np.mean(data.data, axis=0)[None]
 
-    # Downsample before dedispersion up to 1/4th 
-    # DM smearing limit 
+    # Downsample before dedispersion up to 1/4th
+    # DM smearing limit
     data.downsample(downsamp_smear)
     data.data -= np.median(data.data, axis=-1)[:, None]
-    full_arr = np.empty([int(ndm), int(ntime)])   
+    full_arr = np.empty([int(ndm), int(ntime)])
     if not fn_mask is None:
         pass
         # rfimask = rfifind.rfifind(fn_mask)
@@ -377,7 +398,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     if multiproc is True:
         tbeg=time.time()
-        global datacopy 
+        global datacopy
 
         size_arr = sys.getsizeof(data.data)
         nproc = int(32.0e9/size_arr)
@@ -387,7 +408,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         for kk in range(ndm//ndm_):
             dms_ = dms[ndm_*kk:ndm_*(kk+1)]
             datacopy = copy.deepcopy(data)
-            pool = multiprocessing.Pool(processes=ndm_)        
+            pool = multiprocessing.Pool(processes=ndm_)
             data_tuple = pool.map(multiproc_dedisp, [i for i in dms_])
             pool.close()
 
@@ -417,14 +438,14 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
             full_arr[jj, np.abs(min(0, t_min)):] = copy.copy(dm_arr)
 
-            logging.info("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" %                         
+            logging.info("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" %
                          (dm_, t0, downsamp, sig_cut))
-#            print("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" % 
+#            print("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" %
 #                        (dm_, t0, downsamp, sig_cut))
 
             if jj==dm_max_jj:
                 data_dm_max = data_copy.data[:, max(0, t_min):t_max]
-                snr_max = SNRtools.calc_snr_matchedfilter(data_dm_max.mean(0), widths=[downsamp_res])[0] 
+                snr_max = SNRtools.calc_snr_matchedfilter(data_dm_max.mean(0), widths=[downsamp_res])[0]
                 if t_min<0:
                     Z = np.zeros([nfreq, np.abs(t_min)])
                     data_dm_max = np.concatenate([Z, data_dm_max], axis=1)
@@ -432,13 +453,13 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     # bin down to nfreq_plot freq channels
     full_freq_arr_downsamp = data_dm_max[:nfreq//nfreq_plot*nfreq_plot, :].reshape(\
                                    nfreq_plot, -1, ntime).mean(1)
-    
+
     # bin down in time by factor of downsamp
     full_freq_arr_downsamp = full_freq_arr_downsamp[:, :ntime//downsamp_res*downsamp_res\
                                    ].reshape(-1, ntime//downsamp_res, downsamp_res).mean(-1)
 
 #    snr_max = SNRtools.calc_snr_mad(full_freq_arr_downsamp.mean(0))
-    
+
     if snr_max < sig_thresh_local:
         logging.info("\nSkipping trigger below local threshold %.2f:" % sig_thresh_local)
         logging.info("snr_local=%.2f  snr_trigger=%.2f\n" % (snr_max, sig_cut))
@@ -447,7 +468,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     times = np.linspace(0, ntime_plot*downsamp*dt, len(full_freq_arr_downsamp[0]))
 
     full_dm_arr_downsamp = full_arr[:, :ntime//downsamp_res*downsamp_res]
-    full_dm_arr_downsamp = full_dm_arr_downsamp.reshape(-1, 
+    full_dm_arr_downsamp = full_dm_arr_downsamp.reshape(-1,
                              ntime//downsamp_res, downsamp_res).mean(-1)
 
     full_freq_arr_downsamp /= np.std(full_freq_arr_downsamp)
@@ -466,30 +487,30 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     params = sig_cut, dms[dm_max_jj], downsamp, t0, dt
     tmed = np.median(full_freq_arr_downsamp, axis=-1, keepdims=True)
-    full_freq_arr_downsamp -= tmed 
+    full_freq_arr_downsamp -= tmed
 
     if mk_plot is True:
         logging.info(fn_fig_out)
 
         if ndm==1:
-            plotter.plot_two_panel(full_freq_arr_downsamp, params, prob=None, 
-                                   freq_low=freq_low, freq_up=freq_up, 
+            plotter.plot_two_panel(full_freq_arr_downsamp, params, prob=None,
+                                   freq_low=freq_low, freq_up=freq_up,
                                    cand_no=cand_no, times=times, suptitle=suptitle,
                                    fnout=fn_fig_out)
         else:
-            plotter.plot_three_panel(full_freq_arr_downsamp, 
-                                     full_dm_arr_downsamp, params, dms, 
-                                     times=times, freq_low=freq_low, 
-                                     freq_up=freq_up, 
-                                     suptitle=suptitle, fnout=fn_fig_out, 
+            plotter.plot_three_panel(full_freq_arr_downsamp,
+                                     full_dm_arr_downsamp, params, dms,
+                                     times=times, freq_low=freq_low,
+                                     freq_up=freq_up,
+                                     suptitle=suptitle, fnout=fn_fig_out,
                                      cand_no=cand_no)
-    
+
     return full_dm_arr_downsamp, full_freq_arr_downsamp, time_res, params
 
-def h5_writer(data_freq_time, data_dm_time, 
+def h5_writer(data_freq_time, data_dm_time,
               dm0, t0, snr, beamno='', basedir='./',
               time_res=''):
-    """ Write to an hdf5 file trigger data, 
+    """ Write to an hdf5 file trigger data,
     pulse parameters
     """
     fnout = '%s/CB%s_snr%d_dm%d_t0%d.hdf5'\
@@ -498,7 +519,7 @@ def h5_writer(data_freq_time, data_dm_time,
     f = h5py.File(fnout, 'w')
     f.create_dataset('data_freq_time', data=data_freq_time)
 
-    if data_dm_time is not None:    
+    if data_dm_time is not None:
         f.create_dataset('data_dm_time', data=data_dm_time)
         ndm = data_dm_time.shape[0]
     else:
@@ -526,7 +547,7 @@ def file_reader(fn, ftype='hdf5'):
         data_dm_time = f['data_dm_time'][:]
         attr = f.attrs.items()
 
-        snr, dm0, time_res, t0 = attr[0][1], attr[1][1], attr[5][1], attr[6][1] 
+        snr, dm0, time_res, t0 = attr[0][1], attr[1][1], attr[5][1], attr[6][1]
 
         f.close()
 
@@ -538,7 +559,7 @@ def file_reader(fn, ftype='hdf5'):
         return data
 
 if __name__=='__main__':
-# Example usage 
+# Example usage
 # python triggers.py /data/09/filterbank/20171107/2017.11.07-01:27:36.B0531+21/CB21.fil\
 #     CB21_2017.11.07-01:27:36.B0531+21.trigger --sig_thresh 12.0 --mk_plot False
 
@@ -582,6 +603,30 @@ if __name__=='__main__':
     parser.add_option('--rficlean', dest='rficlean', action='store_true', \
                         help="use rficlean if True (default False)", default=False)
 
+    parser.add_option('--threshold_time', dest='threshold_time', action='store_true', \
+                        help="If rficlean is True, defines threshold for time-domain clean (default 3.25)",
+                        default=3.25)
+
+    parser.add_option('--threshold_frequency', dest='threshold_frequency', type=float, \
+                        help="If rficlean is True, defines threshold for freqency-domain clean (default 2.5)",
+                        default=2.75)
+
+    parser.add_option('--bin_size', dest='bin_size', action='store_true', \
+                        help="If rficlean is True, defines bin size for bandpass removal (default 32)",
+                        default=32)
+
+    parser.add_option('--n_iter_time', dest='n_iter_time', action='store_true', \
+                        help="If rficlean is True, defines number of iteration for time-domain clean (default 3)",
+                        default=3)
+
+    parser.add_option('--n_iter_frequency', dest='n_iter_frequency', action='store_true', \
+                        help="If rficlean is True, defines number of iteration for frequency-domain clean (default 3)",
+                        default=3)
+
+    parser.add_option('--clean_type', dest='clean_type', \
+                        help="If rficlean is True, defines type of clean (default 'time')",
+                        choices=['time', 'freqency', 'both'], default='time')
+
     parser.add_option('--subtract_zerodm', dest='subtract_zerodm', action='store_true', \
                         help="use DM=0 timestream subtraction if True (default False)", default=False)
 
@@ -594,27 +639,27 @@ if __name__=='__main__':
                         default=250)
 
     parser.add_option('--cmap', dest='cmap', type='str',
-                        help="imshow colourmap", 
+                        help="imshow colourmap",
                         default='RdBu')
 
     parser.add_option('--dm_min', dest='dm_min', type='float',
-                        help="", 
+                        help="",
                         default=10.0)
 
     parser.add_option('--time_limit', dest='time_limit', type='float',
-                        help="Total time to spend processing in seconds", 
+                        help="Total time to spend processing in seconds",
                         default=np.inf)
 
     parser.add_option('--dm_max', dest='dm_max', type='float',
-                        help="", 
+                        help="",
                         default=np.inf)
 
     parser.add_option('--sig_thresh_local', dest='sig_thresh_local', type='float',
-                        help="", 
+                        help="",
                         default=0.0)
 
     parser.add_option('--outdir', dest='outdir', type='str',
-                        help="directory to write data to", 
+                        help="directory to write data to",
                         default='./data/')
 
     parser.add_option('--compare_trig', dest='compare_trig', type='str',
@@ -632,7 +677,7 @@ if __name__=='__main__':
                         help="TAB to process (0 for IAB) (default: 0)", default=0)
 
     logfn = time.strftime("%Y%m%d-%H%M") + '.log'
-    logging.basicConfig(format='%(asctime)s %(message)s', 
+    logging.basicConfig(format='%(asctime)s %(message)s',
                     level=logging.INFO, filename=logfn)
 
     start_time = time.time()
@@ -656,12 +701,12 @@ if __name__=='__main__':
 
     if options.compare_trig is not None:
         par_1, par_2, par_match_arr, ind_missed, ind_matched = SNRTools.compare_snr(
-                                        fn_sp, options.compare_trig, 
-                                        dm_min=options.dm_min, 
-                                        dm_max=options.dm_max, 
+                                        fn_sp, options.compare_trig,
+                                        dm_min=options.dm_min,
+                                        dm_max=options.dm_max,
                                         save_data=False,
-                                        sig_thresh=options.sig_thresh, 
-                                        max_rows=None, 
+                                        sig_thresh=options.sig_thresh,
+                                        max_rows=None,
                                         t_window=0.25)
 
         snr_1, snr_2 = par_1[0], par_2[0]
@@ -674,7 +719,7 @@ if __name__=='__main__':
         sig_cut, dm_cut, tt_cut, ds_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
                                                          dm_min=options.dm_min,
                                                          dm_max=options.dm_max,
-                                                         sig_max=options.sig_max, 
+                                                         sig_max=options.sig_max,
                                                          t_window=0.5, tab=options.tab)
 
     if options.descending_snr:
@@ -712,7 +757,7 @@ if __name__=='__main__':
                 grouped_triggers, fmt='%0.2f %0.1f %0.3f %0.1f')
 
     skipped_counter = 0
-    ii = None 
+    ii = None
 
     for ii, t0 in enumerate(tt_cut[:options.ntrig]):
         try:
@@ -723,15 +768,21 @@ if __name__=='__main__':
         logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f" % (dm_cut[ii], sig_cut[ii], ds_cut[ii], t0))
         data_dm_time, data_freq_time, time_res, params = proc_trigger(\
                                         fn_fil, dm_cut[ii], t0, sig_cut[ii],
-                                        mk_plot=options.mk_plot, ndm=options.ndm, 
+                                        mk_plot=options.mk_plot, ndm=options.ndm,
                                         downsamp=ds_cut[ii], nfreq_plot=options.nfreq_plot,
                                         ntime_plot=options.ntime_plot, cmap=options.cmap,
                                         fn_mask=options.maskfile, cand_no=ii,
-                                        multiproc=options.multiproc, 
-                                        rficlean=options.rficlean, 
-                                        snr_comparison=snr_comparison, 
+                                        multiproc=options.multiproc,
+                                        rficlean=options.rficlean,
+                                        snr_comparison=snr_comparison,
                                         outdir=options.outdir,
-                                                                      beamno=options.beamno, sig_thresh_local=options.sig_thresh_local, subtract_zerodm=options.subtract_zerodm)
+                                                                      beamno=options.beamno, sig_thresh_local=options.sig_thresh_local, subtract_zerodm=options.subtract_zerodm,
+                                          threshold_time=options.threshold_time,
+                                          threshold_frequency=options.threshold_frequency,
+                                          bin_size=options.bin_size,
+                                          n_iter_time=options.n_iter_time,
+                                          n_iter_frequency=options.n_iter_frequency,
+                                          clean_type=options.clean_type)
 
         if len(data_dm_time)==0:
             skipped_counter += 1
@@ -739,8 +790,8 @@ if __name__=='__main__':
 
         if options.save_data != '0':
             if options.save_data == 'hdf5':
-                h5_writer(data_freq_time, data_dm_time, 
-                          dm_cut[ii], t0, sig_cut[ii], 
+                h5_writer(data_freq_time, data_dm_time,
+                          dm_cut[ii], t0, sig_cut[ii],
                           beamno=options.beamno+options.tab_str, basedir=basedir, time_res=time_res)
             elif options.save_data == 'npy':
                 fnout_freq_time = '%s/data%s_snr%d_dm%d_t0%f_freq.npy'\
@@ -777,10 +828,10 @@ if __name__=='__main__':
             else:
                 data_dm_time_full = np.concatenate(data_dm_time_full, axis=0)
                 data_freq_time_full = np.concatenate(data_freq_time_full, axis=0)
-        
+
             data_dm_time_full = data_dm_time_full.reshape(-1,ndm,ntime_plot)
             data_freq_time_full = data_freq_time_full.reshape(-1,nfreq_plot,ntime_plot)
-        
+
         fnout = '%s/data%s_full.hdf5' % (basedir, options.tab_str)
 
         f = h5py.File(fnout, 'w')
@@ -798,11 +849,3 @@ if __name__=='__main__':
         logging.warning("There were no triggers")
 
     exit()
-
-
-
-
-
-
-
-
