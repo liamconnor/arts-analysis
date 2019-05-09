@@ -629,7 +629,7 @@ class SNR_Tools:
 
     def compare_snr(self, fn_1, fn_2, dm_min=0, dm_max=np.inf, save_data=False,
                     sig_thresh=5.0, t_window=0.5, max_rows=None,
-                    t_max=np.inf, tab=None):
+                    t_max=np.inf, tab=None, freq_ref_1=1400., freq_ref_2=1400.):
         """ Read in two files with single-pulse candidates
         and compare triggers.
 
@@ -667,6 +667,9 @@ class SNR_Tools:
         snr_2, dm_2, t_2, w_2, ind_full_2 = get_triggers(fn_2, sig_thresh=sig_thresh, 
                                     dm_min=dm_min, dm_max=dm_max, t_window=t_window, 
                                                          max_rows=max_rows, t_max=t_max, tab=tab)
+
+        # adjust arrival times to have same ref freq after dedispersion
+        t_1 += 4148*dm_1*(freq_ref_2**-2 - freq_ref_1**-2)
 
         snr_2_reorder = []
         dm_2_reorder = []
@@ -823,44 +826,39 @@ if __name__=='__main__':
     parser.add_option('--dm_max', dest='dm_max', type='float',
                         help="", 
                         default=np.inf)
-
     parser.add_option('--t_max', dest='t_max', type='float',
                         help="Only process first t_max seconds", 
                         default=np.inf)
-
     parser.add_option('--t_window', dest='t_window', type='float',
                         help="", 
                         default=0.1)
-
     parser.add_option('--outdir', dest='outdir', type='str',
                         help="directory to write data to", 
                         default='./data/')
-
     parser.add_option('--title', dest='title', type='str',
                         help="directory to write data to", 
                         default='file1 vs. file2')
-
     parser.add_option('--figname', dest='figname', type='str',
                         help="directory to write data to", 
                         default='comparison.pdf')
-
     parser.add_option('--algo1', dest='algo1', type='str',
                         help="name of first algo", 
                         default='algorithm1')
-
     parser.add_option('--algo2', dest='algo2', type='str',
                         help="name of second algo", 
                         default='algorithm2')
-
     parser.add_option('--truthfile', dest='truthfile', type='str',
                         help="truth file", 
                         default=None)
-
     parser.add_option('--tab', dest='tab', type=int, \
                         help="TAB to process (0 for IAB) (default: 0)", default=0)
-
     parser.add_option('--plot_both', dest='plot_both', action='store_true', \
                         help="make plot with both fn1 vs. fn2 and fn2 vs. fn1", default=False)
+    parser.add_option('--freq_ref_1', dest='freq_ref_1', type=float, \
+                        help="Reference frequency of fn1", default=1400.)
+    parser.add_option('--freq_ref_2', dest='freq_ref_2', type=float, \
+                        help="Reference frequency of fn2", default=1400.)
+
 
     options, args = parser.parse_args()
     fn_1 = args[0]
@@ -873,7 +871,7 @@ if __name__=='__main__':
                                         sig_thresh=options.sig_thresh, 
                                         t_window=options.t_window, 
                                         max_rows=None, t_max=options.t_max,
-                                        tab=options.tab)
+                                                                                         tab=options.tab, freq_ref_1=options.freq_ref_1, freq_ref_2=options.freq_ref_2)
         if options.plot_both is True:
             par_1b, par_2b, par_match_arrb, ind_missedb, ind_matchedb = SNRTools.compare_snr(fn_2, fn_1, 
                                         dm_min=options.dm_min, 
@@ -881,7 +879,7 @@ if __name__=='__main__':
                                         sig_thresh=options.sig_thresh, 
                                         t_window=options.t_window, 
                                         max_rows=None, t_max=options.t_max, 
-                                        tab=options.tab)                                       
+                                                                                             tab=options.tab, freq_ref_1=options.freq_ref_2, freq_ref_2=options.freq_ref_1)                                       
 
     except TypeError:
         print("No matches, exiting")
