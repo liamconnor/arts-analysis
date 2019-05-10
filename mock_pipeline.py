@@ -2,21 +2,15 @@ import os
 
 import numpy as np
 import glob 
+import optparse
 
 import run_amber_args 
 import triggers 
 
 
 if __name__=='__main__':
-	parser = optparse.OptionParser(prog="tools.py", \
-                        version="", \
-                        usage="%prog fn1 fn2 [OPTIONS]", \
-                        description="Compare to single-pulse trigger files")
-
-    parser.add_option('--sig_thresh', dest='sig_thresh', type='float', \
-                        help="Only process events above >sig_thresh S/N" \
-                                "(Default: 5.0)", default=5.0)
-    options, args = parser.parse_args()
+	parser = optparse.OptionParser(prog="tools.py", version="", usage="%prog fn1 fn2 [OPTIONS]", description="Compare to single-pulse trigger files")
+	options, args = parser.parse_args()
     fdir = args[0]
     files = glob.glob(fdir)
     fnmod = '/home/arts/connor/software/single_pulse_ml_AA-ALERT/single_pulse_ml/single_pulse_ml/model/20190501freq_time.hdf5'
