@@ -80,6 +80,26 @@ def dedisperse(data, dm, dt=8.192e-5, freq=(1550, 1250), freq_ref=None):
 
     return data
 
+def dm_transform(data, freq, dt=8.192e-5, dm_max=10, dm_min=-10, ndm=50, freq_ref=None):
+    """ Transform freq/time data to dm/time data.
+    """
+
+    if len(freq)<3:
+        NFREQ = data.shape[0]
+        freq = np.linspace(freq[0], freq[1], NFREQ) 
+
+    dms = np.linspace(dm_min, dm_max, ndm)
+    ntime = data.shape[-1]
+
+    data_full = np.zeros([ndm, ntime])
+    times = np.linspace(-0.5*ntime*dt, 0.5*ntime*dt, ntime)
+
+    for ii, dm in enumerate(dms):
+        data_full[ii] = np.mean(dedisperse(data, dm, freq=(freq[0], freq[-1]), 
+                               freq_ref=freq_ref), axis=0)
+
+    return data_full, dms, times
+
 def cleandata(data, threshold=3.0):
     """ Take filterbank object and mask 
     RFI time samples with average spectrum.
