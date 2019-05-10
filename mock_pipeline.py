@@ -16,7 +16,7 @@ if __name__=='__main__':
     fnmod = '/home/arts/connor/software/single_pulse_ml_AA-ALERT/single_pulse_ml/single_pulse_ml/model/20190501freq_time.hdf5'
 
     for fn in files:
-        fntrig = run_amber_args.run_amber_from_dir(fn, nbatch=10800, hdr=362,
+        fntrig = run_amber_args.run_amber_from_dir(fn, nbatch=100, hdr=362,
                       rfi_option="-rfim", snr="mom_sigmacut", snrmin=5,
                       nchan=1536, pagesize=12500, chan_width=0.1953125,
                       min_freq=1249.700927734375, tsamp=8.192e-05)
