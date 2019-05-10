@@ -14,7 +14,8 @@ if __name__=='__main__':
     fdir = args[0]
     files = glob.glob(fdir)
     fnmod = '/home/arts/connor/software/single_pulse_ml_AA-ALERT/single_pulse_ml/single_pulse_ml/model/20190501freq_time.hdf5'
-
+    print(files)
+    exit()
     for fn in files:
         fntrig = run_amber_args.run_amber_from_dir(fn, nbatch=100, hdr=362,
                       rfi_option="-rfim", snr="mom_sigmacut", snrmin=5,
