@@ -145,8 +145,13 @@ def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
     -------
     cleaned filterbank object
     """
+    if clean_type not in ['time', 'both', 'frequency']:
+        logging.info("Not RFI cleaning. Expected time, both or frequency as clean_type")
+        return data
+        
     logging.info("Cleaning RFI")
 
+    dtmean = np.mean(data.data, axis=-1)
     # Clean in time
     #sys_temperature_bandpass(data.data)
     #remove_noisy_freq(data.data, 3)
@@ -154,7 +159,6 @@ def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
     if clean_type in ['time', 'both']:
         for i in range(n_iter_time):
             dfmean = np.mean(data.data, axis=0)
-            dtmean = np.mean(data.data, axis=-1)
 
             # ('data.data', (1536, 265149), 'dfmean', (265149,), 'dtmean', (1536,))
 
@@ -168,15 +172,13 @@ def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
     # Clean in frequency
     # remove bandpass by averaging over bin_size ajdacent channels
     if clean_type in ['frequency', 'both']:
-        for i in range(n_iter_frequency):
-            for i in range(data.data.shape[1]):
-                dtmean_nobandpass = data.data[:, i] - dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)
-                stdevt = np.std(dtmean_nobandpass)
-                medt = np.median(dtmean_nobandpass)
-                maskt = np.abs(dtmean_nobandpass - medt) > threshold_frequency*stdevt
+        for ii in range(n_iter_frequency):
+            dtmean_nobandpass = data.data.mean(1) - dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)
+            stdevt = np.std(dtmean_nobandpass)
+            medt = np.median(dtmean_nobandpass)
+            maskt = np.abs(dtmean_nobandpass - medt) > threshold_frequency*stdevt
+            data.data[maskt] = np.median(dtmean)#dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)[maskt]
 
-                # replace with mean bin values
-                data.data[maskt, i] = dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)[maskt]
     return data
 
 def fil_trigger(fn_fil, dm0, t0, sig_cut,
@@ -383,7 +385,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                          n_iter_time, n_iter_frequency, clean_type)
 
     if subtract_zerodm:
-        data.data -= np.mean(data.data, axis=0)[None]
+        data.data -= np.mean(data.data, axis=0, keepdims=True)
 
     # Downsample before dedispersion up to 1/4th
     # DM smearing limit
@@ -759,6 +761,9 @@ if __name__=='__main__':
     skipped_counter = 0
     ii = None
 
+#    tt_cut += 4148*dm_cut*(-1400**-2 + 1549.78**-2)
+#    ds_cut = (ds_cut/8.192e-5).astype(int) # hack
+
     for ii, t0 in enumerate(tt_cut[:options.ntrig]):
         try:
             snr_comparison = snr_comparison_arr[ii]
@@ -844,7 +849,7 @@ if __name__=='__main__':
 
         logging.info('Saved all triggers to %s' % fnout)
     if ii is not None:
-        logging.warning("Skipped %d out of %d triggers" % (skipped_counter, ii))
+        logging.warning("Skipped %d out of %d triggers" % (skipped_counter, ii+1))
     else:
         logging.warning("There were no triggers")
 
