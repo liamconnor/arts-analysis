@@ -23,7 +23,7 @@ if __name__=='__main__':
 
         outdir = "/".join(fn.split('/'))
         print(outdir)
-        os.sytem('python triggers.py --rficlean --mk_plot --save_data concat --descending_snr --sig_thresh 8.0 --ndm 1 --nfreq_plot 128 --ntime_plot 250 --outdir %s %s %s' % (outdir, fn_1, fntrig))
+        os.system('python triggers.py --rficlean --mk_plot --save_data concat --descending_snr --sig_thresh 8.0 --ndm 1 --nfreq_plot 128 --ntime_plot 250 --outdir %s %s %s' % (outdir, fn_1, fntrig))
 
         fnh5 = outdir + './data/data_00_full.hdf5'
 
