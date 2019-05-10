@@ -21,10 +21,9 @@ def execute_amber(fn, nbatch=10800, hdr=460,
             %s/mom_steptwo.conf -momad_file %s/momad.conf" % str_args_snr
     elif snr == "mom_sigmacut":
         conf_dir = "/home/oostrum/tuning/tuning_survey/mom_sigmacut/amber_conf"
-        conf_dir = "/home/arts/ARTS-obs/amber_conf/"
+#        conf_dir = "/home/arts/ARTS-obs/amber_conf/"
         str_args_snr = (conf_dir, conf_dir, conf_dir)
-        snr="-snr_mom_sigmacut -max_std_file %s/max_std.conf -mom_stepone_file \
-            %s/mom_stepone.conf -mom_steptwo_file %s/mom_steptwo.conf" % str_args_snr
+        snr="-snr_mom_sigmacut -max_std_file %s/max_std.conf -mom_stepone_file %s/mom_stepone.conf -mom_steptwo_file %s/mom_steptwo.conf" % str_args_snr
     else:
         print("Unknown SNR mode: %s" % snr)
 
@@ -41,7 +40,7 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     amber_step2="%s %s %s %s -opencl_device 2 -device_name ARTS_step2_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 32 -dm_first 0 -dm_step 0.2 -subbanding_dms 64 -subbanding_dm_first 409.6 -subbanding_dm_step 6.4 -output %s_step2" % str_args_step2
 
     str_args_step3 = (general, rfi_option, snr, fil, conf_dir, output_prefix)
-    amber_step3="%s %s %s %s -opencl_device 3 -device_name ARTS_step3_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 16 -dm_first 0 -dm_step 2.5 -subbanding_dms 64 -subbanding_dm_first 819.2 -subbanding_dm_step 40.0 -output %s_step3" % str_args_step3
+    amber_step3="%s %s %s %s -opencl_device 3 -device_name ARTS_step3_nodownsamp_81.92us_1400MHz -integration_steps %s/integration_steps_x1.conf -subbands 32 -dms 16 -dm_first 0 -dm_step 2.5 -subbanding_dms 64 -subbanding_dm_first 819.2 -subbanding_dm_step 40.0 -output %s_step3" % str_args_step3
 
     thread_step1 = threading.Thread(target=os.system, args=[amber_step1])
     thread_step2 = threading.Thread(target=os.system, args=[amber_step2])
@@ -76,7 +75,7 @@ def run_amber_from_dir(dir):
 
     for fn in files:
         outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber'
-        execute_amber(fn, nbatch=10800, hdr=362,
+        execute_amber(fn, nbatch=1000, hdr=362,
                       rfi_option="-rfim", snr="mom_sigmacut", snrmin=5,
                       nchan=1536, pagesize=12500, chan_width=0.1953125,
                       min_freq=1249.700927734375, tsamp=8.192e-05, output_prefix=outfn)
