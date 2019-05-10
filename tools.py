@@ -825,24 +825,19 @@ if __name__=='__main__':
                         version="", \
                         usage="%prog fn1 fn2 [OPTIONS]", \
                         description="Compare to single-pulse trigger files")
-
     parser.add_option('--sig_thresh', dest='sig_thresh', type='float', \
                         help="Only process events above >sig_thresh S/N" \
                                 "(Default: 5.0)", default=5.0)
-
     parser.add_option('--save_data', dest='save_data', type='str',
                         help="save each trigger's data. 0=don't save. \
                         hdf5 = save to hdf5. npy=save to npy. concat to \
                         save all triggers into one file",
                         default='hdf5')
-
     parser.add_option('--mk_plot', dest='mk_plot', action='store_true', \
                         help="make plot if True (default False)", default=False)
-
     parser.add_option('--dm_min', dest='dm_min', type='float',
                         help="", 
                         default=0.0)
-
     parser.add_option('--dm_max', dest='dm_max', type='float',
                         help="", 
                         default=np.inf)
