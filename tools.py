@@ -257,16 +257,22 @@ def read_singlepulse(fn, max_rows=None, beam=None):
 
         if len(A.shape)==1:
             A = A[None]
-
+        
         # SNR sample_no time log_2_width DM_trial DM Members first_samp last_samp
         dm, sig, tt, log_2_downsample = A[:,5], A[:,0], A[:, 2], A[:, 3]
-        print(dm, tt)
         downsample = 2**log_2_downsample
         try:
             beamno = A[:, 9]
             return dm, sig, tt, downsample, beamno
         except:
             pass
+    elif fn.split('.')[-1]=='fredda':
+        A = np.genfromtxt(fn, max_rows=max_rows)
+
+        if len(A.shape)==1:
+            A = A[None]
+        
+        dm, sig, tt, downsample = A[:,5], A[:,0], A[:, 2], A[:, 3]
     else:
         print("Didn't recognize singlepulse file")
         return 
