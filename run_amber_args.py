@@ -63,18 +63,21 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     print("Done")
     return 
 
-def run_amber_from_dir(dir, nbatch=1000, hdr=362,
+def run_amber_from_dir(fns, nbatch=1000, hdr=362,
                       rfi_option="-rfim", snr="mom_sigmacut", snrmin=5,
                       nchan=1536, pagesize=12500, chan_width=0.1953125,
                       min_freq=1249.700927734375, tsamp=8.192e-05):
 
-    if dir.endswith('.fil'):
-        files = [dir]
+    if fns.endswith('.fil'):
+        files = [fns]
     else:
-        files = glob.glob(dir+'*.fil')
+        files = glob.glob(fns+'*.fil')
     files.sort()
 
     outdir = './'
+
+    if len(files)==0:
+        return 
 
     for fn in files:
         outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber'
@@ -87,11 +90,10 @@ def run_amber_from_dir(dir, nbatch=1000, hdr=362,
 
     return '%s.trigger' % outfn
 
-dir = sys.argv[1]
-run_amber_from_dir(dir)
-
-
-
-
-
-
+if __name__=='__main__':
+    fns = sys.argv[1]
+    run_amber_from_dir(fns, nbatch=10800, hdr=362,
+                      rfi_option="", snr="mom_sigmacut", snrmin=6,
+                      nchan=1536, pagesize=12500, chan_width=0.1953125,
+                      min_freq=1249.700927734375, tsamp=8.192e-05)
+    # shouldn't this code read the header info on its own?
