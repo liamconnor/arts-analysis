@@ -4,6 +4,13 @@ import sys
 import threading
 import glob
 
+import reader 
+
+def get_header_info(fn_fil):
+    data_fil_obj_skel, freq_arr, dt, header = reader.read_fil_data(fn_fil, start=0, stop=1)
+
+    return header
+
 def execute_amber(fn, nbatch=10800, hdr=460, 
                   rfi_option="-rfim", snr="mom_sigmacut", snrmin=6,
                   nchan=1536, pagesize=12500, chan_width=0.1953125, 
@@ -63,23 +70,28 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     print("Done")
     return 
 
-def run_amber_from_dir(fns, nbatch=1000, hdr=362,
-                      rfi_option="-rfim", snr="mom_sigmacut", snrmin=5,
-                      nchan=1536, pagesize=12500, chan_width=0.1953125,
-                      min_freq=1249.700927734375, tsamp=8.192e-05):
+def run_amber_from_dir(fns, nbatch=1000, hdr=362, rfi_option="-rfim", 
+                       snr="mom_sigmacut", snrmin=6, pagesize=12500):
 
     if fns.endswith('.fil'):
         files = [fns]
     else:
         files = glob.glob(fns+'*.fil')
-    files.sort()
 
+    files.sort()
     outdir = './'
 
     if len(files)==0:
         return 
 
     for fn in files:
+        data_fil_obj_skel, freq_arr, dt, header = reader.read_fil_data(fn, start=0, stop=1)
+        header =  get_header_info(fn)
+        nchan = header['nchans']
+        chan_width = np.abs(header['foff'])
+        tsamp = header['tsamp']
+        min_freq = freq_arr.min()
+
         outfn = outdir + fn.split('/')[-1].strip('.fil') + 'amber'
         execute_amber(fn, nbatch=nbatch, hdr=hdr,
                       rfi_option="-rfim", snr="mom_sigmacut", snrmin=5,
@@ -94,6 +106,20 @@ if __name__=='__main__':
     fns = sys.argv[1]
     run_amber_from_dir(fns, nbatch=10800, hdr=362,
                       rfi_option="", snr="mom_sigmacut", snrmin=6,
-                      nchan=1536, pagesize=12500, chan_width=0.1953125,
-                      min_freq=1249.700927734375, tsamp=8.192e-05)
+                      pagesize=12500)
     # shouldn't this code read the header info on its own?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
