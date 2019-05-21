@@ -12,13 +12,9 @@ def get_header_info(fn_fil):
 
     return header
 
-def execute_amber(fn, nbatch=10800, hdr=460, 
-                  rfi_option="-rfim", snr="mom_sigmacut", snrmin=6,
+def execute_amber(fn, nbatch=10800, hdr=362, rfi_option="-rfim", snr="mom_sigmacut", snrmin=6,
                   nchan=1536, pagesize=12500, chan_width=0.1953125, 
                   min_freq=1249.700927734375, tsamp=8.192e-05, output_prefix="./"):
-    if hdr!=460:
-        print("Using unconventional header length: %d" % hdr)
-
     if snr == "momad":
         conf_dir = "/home/oostrum/tuning/tuning_survey/momad/amber_conf"
 
@@ -71,7 +67,7 @@ def execute_amber(fn, nbatch=10800, hdr=460,
     print("Done")
     return 
 
-def run_amber_from_dir(fns, nbatch=1000, hdr=362, rfi_option="-rfim", 
+def run_amber_from_dir(fns, nbatch=1000, rfi_option="-rfim", 
                        snr="mom_sigmacut", snrmin=6, pagesize=12500):
 
     if fns.endswith('.fil'):
@@ -87,7 +83,9 @@ def run_amber_from_dir(fns, nbatch=1000, hdr=362, rfi_option="-rfim",
 
     for fn in files:
         data_fil_obj_skel, freq_arr, dt, header = reader.read_fil_data(fn, start=0, stop=1)
+        print(header)
         header =  get_header_info(fn)
+        hdr = header['hdr']
         nchan = header['nchans']
         chan_width = np.abs(header['foff'])
         tsamp = header['tsamp']
@@ -105,7 +103,7 @@ def run_amber_from_dir(fns, nbatch=1000, hdr=362, rfi_option="-rfim",
 
 if __name__=='__main__':
     fns = sys.argv[1]
-    run_amber_from_dir(fns, nbatch=10800, hdr=362,
+    run_amber_from_dir(fns, nbatch=10800, 
                       rfi_option="", snr="mom_sigmacut", snrmin=6,
                       pagesize=12500)
     # shouldn't this code read the header info on its own?
