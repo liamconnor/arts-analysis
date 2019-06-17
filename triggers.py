@@ -775,7 +775,7 @@ if __name__=='__main__':
                                                                                    dm_min=options.dm_min,
                                                                                    dm_max=options.dm_max,
                                                                                    sig_max=options.sig_max,
-                                                                                   t_window=0.5, sb=True)
+                                                                                   t_window=0.5, read_beam=True)
         else:
             sig_cut, dm_cut, tt_cut, ds_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
                                                                            dm_min=options.dm_min,

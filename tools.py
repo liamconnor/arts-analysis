@@ -11,10 +11,12 @@ except:
 # should there maybe be a clustering class
 # and a S/N calculation class?
 
+
 class AnalyseTriggers:
 
     def __init__(self):
         pass 
+
 
 def combine_all_beams(fdir, fnout=None):
 
@@ -44,6 +46,7 @@ def combine_all_beams(fdir, fnout=None):
 
     return data_all
 
+
 def get_multibeam_triggers(times, beamno, t_window=0.5):
     CB_list = set(beamno)
     nbins = int((times.max()-times.min())/t_window)
@@ -59,6 +62,7 @@ def get_multibeam_triggers(times, beamno, t_window=0.5):
         ntrig_perbeam += vals
 
     return ntrig_perbeam
+
 
 def dedisperse(data, dm, dt=8.192e-5, freq=(1550, 1250), freq_ref=None):
     data = data.copy()
@@ -80,6 +84,7 @@ def dedisperse(data, dm, dt=8.192e-5, freq=(1550, 1250), freq_ref=None):
 
     return data
 
+
 def dm_transform(data, freq, dt=8.192e-5, dm_max=10, dm_min=-10, ndm=50, freq_ref=None):
     """ Transform freq/time data to dm/time data.
     """
@@ -99,6 +104,7 @@ def dm_transform(data, freq, dt=8.192e-5, dm_max=10, dm_min=-10, ndm=50, freq_re
                                freq_ref=freq_ref), axis=0)
 
     return data_full, dms, times
+
 
 def cleandata(data, threshold=3.0):
     """ Take filterbank object and mask 
@@ -129,6 +135,7 @@ def cleandata(data, threshold=3.0):
     data[:, maskf] = dtmean[:, None]*np.ones(len(maskf))[None]
 
     return data
+
 
 def group_dm_time_beam(fdir, fnout=None, trigname='cand'):
     """ Go through all compound beams (CB) in 
@@ -170,6 +177,7 @@ def group_dm_time_beam(fdir, fnout=None, trigname='cand'):
 
     return times_full, beamno_full, dm_full, ntrig_pb
 
+
 def dm_range(dm_max, dm_min=5., frac=0.2):
     """ Generate list of DM-windows in which 
     to search for single pulse groups. 
@@ -204,6 +212,7 @@ def dm_range(dm_max, dm_min=5., frac=0.2):
 
     return dm_list
 
+
 def read_singlepulse(fn, max_rows=None, beam=None):
     """ Read in text file containing single-pulse 
     candidates. Allowed formats are:
@@ -220,14 +229,14 @@ def read_singlepulse(fn, max_rows=None, beam=None):
     if fn.split('.')[-1] in ('singlepulse', 'txt'):
         A = np.genfromtxt(fn, max_rows=max_rows)
 
-        if len(A.shape)==1:
+        if len(A.shape) == 1:
             A = A[None]
 
         dm, sig, tt, downsample = A[:,0], A[:,1], A[:,2], A[:,4]
-    elif fn.split('.')[-1]=='trigger':
+    elif fn.split('.')[-1] == 'trigger':
         A = np.genfromtxt(fn, max_rows=max_rows)
 
-        if len(A.shape)==1:
+        if len(A.shape) == 1:
             A = A[None]
 
         # Check if amber has compacted, in which case 
@@ -235,9 +244,9 @@ def read_singlepulse(fn, max_rows=None, beam=None):
         if len(A[0]) > 7:
             if len(A[0])==8:
                 # beam batch sample integration_step compacted_integration_steps time DM compacted_DMs SNR
-                beamno, dm, sig, tt, downsample = A[:, 0], A[:,-3], A[:,-1], A[:, -4], A[:, 3]
+                beamno, dm, sig, tt, downsample = A[:, 0], A[:, -3], A[:, -1], A[:, -4], A[:, 3]
             elif len(A[0])==10:
-                beamno, dm, sig, tt, downsample = A[:, 0], A[:,-3], A[:,-1], A[:, -5], A[:, 3]
+                beamno, dm, sig, tt, downsample = A[:, 0], A[:, -3], A[:, -1], A[:, -5], A[:, 3]
             else:
                 print("Error: DO NOT RECOGNIZE COLUMNS OF .trigger FILE")
                 return 
@@ -245,17 +254,17 @@ def read_singlepulse(fn, max_rows=None, beam=None):
             # beam batch sample integration_step time DM SNR
             beamno, dm, sig, tt, downsample = A[:, 0], A[:,-2], A[:,-1], A[:, -3], A[:, 3]
         
-        if beam is not None:
-            # pick only the specified beam
-            dm = dm[beamno.astype(int) == beam]
-            sig = sig[beamno.astype(int) == beam]
-            tt = tt[beamno.astype(int) == beam]
-            downsample = downsample[beamno.astype(int) == beam]
+        if beam is not None and beam != 'all':
+                # pick only the specified beam
+                dm = dm[beamno.astype(int) == beam]
+                sig = sig[beamno.astype(int) == beam]
+                tt = tt[beamno.astype(int) == beam]
+                downsample = downsample[beamno.astype(int) == beam]
 
-    elif fn.split('.')[-1]=='cand':
+    elif fn.split('.')[-1] == 'cand':
         A = np.genfromtxt(fn, max_rows=max_rows)
 
-        if len(A.shape)==1:
+        if len(A.shape) == 1:
             A = A[None]
         
         # SNR sample_no time log_2_width DM_trial DM Members first_samp last_samp
@@ -277,15 +286,22 @@ def read_singlepulse(fn, max_rows=None, beam=None):
         print("Didn't recognize singlepulse file")
         return 
 
-    if len(A)==0:
-        return 0, 0, 0, 0
+    if len(A) == 0:
+        if beam == 'all':
+            return 0, 0, 0, 0, 0
+        else:
+            return 0, 0, 0, 0
 
-    return dm, sig, tt, downsample
+    if beam == 'all':
+        return dm, sig, tt, downsample, beamno
+    else:
+        return dm, sig, tt, downsample
+
 
 def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf, 
                  t_window=0.5, max_rows=None, t_max=np.inf,
                  sig_max=np.inf, dt=2*40.96, delta_nu_MHz=300./1536, 
-                 nu_GHz=1.4, fnout=False, tab=None, dm_width_filter=False):
+                 nu_GHz=1.4, fnout=False, tab=None, read_beam=False, dm_width_filter=False):
     """ Get brightest trigger in each 10s chunk.
 
     Parameters
@@ -306,6 +322,9 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
         name of text file to save clustered triggers to 
     tab : int
         which TAB to process (0 for IAB)
+    read_beam: bool
+        read and return beam number (default: False)
+        all beams are read if this is true
 
     Returns
     -------
@@ -316,20 +335,30 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     tt_cut : ndarray
         Arrival times of brightest trigger in each DM/T window 
     ds_cut : ndarray 
-        downsample factor array of brightest trigger in each DM/T window 
+        downsample factor array of brightest trigger in each DM/T window
+    beam_cut: ndarray
+        beam array of brightest trigger in each DM/T windows (only if read_beam is True)
     """
     if tab is not None:
         beam_amber = tab
+    elif read_beam:
+        beam_amber = 'all'
     else:
         beam_amber = None
 
-    if type(fn)==str:
-        dm, sig, tt, downsample = read_singlepulse(fn, max_rows=max_rows, beam=beam_amber)[:4]
-    elif type(fn)==np.ndarray:
-        dm, sig, tt, downsample = fn[:,0], fn[:,1], fn[:,2], fn[:,3]
+    if type(fn) == str:
+        if read_beam:
+            dm, sig, tt, downsample = read_singlepulse(fn, max_rows=max_rows, beam=beam_amber)[:4]
+        else:
+            dm, sig, tt, downsample, beam = read_singlepulse(fn, max_rows=max_rows, beam=beam_amber)[:5]
+    elif type(fn) == np.ndarray:
+        dm, sig, tt, downsample = fn[:, 0], fn[:, 1], fn[:, 2], fn[:, 3]
     else:
-        print("Wrong input type. Expected string or nparray")
-        return [],[],[],[],[]
+        print("Wrong input type. Expected string or ndarray")
+        if read_beam:
+            return [], [], [], [], [], []
+        else:
+            return [], [], [], [], []
 
     ntrig_orig = len(dm)
 
@@ -338,9 +367,11 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     tt = np.delete(tt, bad_sig_ind)
     dm = np.delete(dm, bad_sig_ind)
     downsample = np.delete(downsample, bad_sig_ind)
-    sig_cut, dm_cut, tt_cut, ds_cut = [],[],[],[]
+    sig_cut, dm_cut, tt_cut, ds_cut = [], [], [], []
+    if read_beam:
+        beam_cut = []
 
-    if len(tt)==0:
+    if len(tt) == 0:
         print("Returning None: time array is empty")
         return 
 
@@ -349,7 +380,7 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
 
     # Make dm windows between 90% of the lowest trigger and 
     # 10% of the largest trigger
-    if dm_min==0:
+    if dm_min == 0:
         dm_min = 0.9*dm.min()
     if dm_max > 1.1*dm.max():
         dm_max = 1.1*dm.max()
@@ -377,6 +408,8 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
                 dm_cut.append(dm[ind_maxsnr])
                 tt_cut.append(tt[ind_maxsnr])
                 ds_cut.append(downsample[ind_maxsnr])
+                if read_beam:
+                    beam_cut.append(beam[ind_maxsnr])
                 ind_full.append(ind_maxsnr)
             except:
                 continue
@@ -392,6 +425,8 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     sig_cut = np.array(sig_cut)[ind]
     tt_cut = tt_cut[ind]
     ds_cut = np.array(ds_cut)[ind]
+    if read_beam:
+        beam_cut = np.array(beam_cut)[ind]
 
     ntrig_group = len(dm_cut)
 
@@ -410,14 +445,24 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     tt_cut = np.delete(tt_cut, rm_ii)
     sig_cut = np.delete(sig_cut, rm_ii)
     ds_cut = np.delete(ds_cut, rm_ii)
+    if read_beam:
+        beam_cut = np.delete(beam_cut, rm_ii)
     ind_full = np.delete(ind_full, rm_ii)
 
-    if fnout != False:
-        clustered_arr = np.concatenate([sig_cut, dm_cut, tt_cut, ds_cut, ind_full])
-        clustered_arr = clustered_arr.reshape(5, -1)
+    if fnout:
+        if read_beam:
+            clustered_arr = np.concatenate([sig_cut, dm_cut, tt_cut, ds_cut, beam_cut, ind_full])
+            clustered_arr = clustered_arr.reshape(6, -1)
+        else:
+            clustered_arr = np.concatenate([sig_cut, dm_cut, tt_cut, ds_cut, ind_full])
+            clustered_arr = clustered_arr.reshape(5, -1)
         np.savetxt(fnout, clustered_arr) 
 
-    return sig_cut, dm_cut, tt_cut, ds_cut, ind_full
+    if read_beam:
+        return sig_cut, dm_cut, tt_cut, ds_cut, beam_cut, ind_full
+    else:
+        return sig_cut, dm_cut, tt_cut, ds_cut, ind_full
+
 
 def add_tab_col(fdir, fnout='out'):
     """ Take list of .trigger files for 
@@ -439,6 +484,7 @@ def add_tab_col(fdir, fnout='out'):
     
     trigg_arr_full = np.concatenate(trigg_arr_full)
     np.savetxt(fnout+'.'+ext, trigg_arr_full)
+
 
 def plot_tab_summary(fn, ntab=12, suptitle=''):
     fig, axs = plt.subplots(6, 4, sharex=True, figsize=(12,10))
@@ -518,6 +564,7 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
     suptitle_ = suptitle + '\nTotal triggers: %d' % ntot 
     plt.suptitle(suptitle_, fontsize=20)
     plt.show()
+
 
 class SNR_Tools:
 
