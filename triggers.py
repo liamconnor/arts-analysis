@@ -716,7 +716,7 @@ if __name__=='__main__':
     parser.add_option('--tab', dest='tab', type=int,
                       help="TAB to process (0 for IAB) (default: 0)", default=0)
 
-    parser.add_option('--synthesized_beams', dest='sb', type=bool, action='store_true',
+    parser.add_option('--synthesized_beams', dest='sb', action='store_true',
                       help="Process synthesized beams")
 
     parser.add_option('--sbmin', type=int, default=0, help="First SB to process data for (Default: 0)")

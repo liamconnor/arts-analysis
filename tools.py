@@ -348,9 +348,9 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
 
     if type(fn) == str:
         if read_beam:
-            dm, sig, tt, downsample = read_singlepulse(fn, max_rows=max_rows, beam=beam_amber)[:4]
-        else:
             dm, sig, tt, downsample, beam = read_singlepulse(fn, max_rows=max_rows, beam=beam_amber)[:5]
+        else:
+            dm, sig, tt, downsample = read_singlepulse(fn, max_rows=max_rows, beam=beam_amber)[:4]
     elif type(fn) == np.ndarray:
         dm, sig, tt, downsample = fn[:, 0], fn[:, 1], fn[:, 2], fn[:, 3]
     else:
