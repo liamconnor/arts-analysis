@@ -794,7 +794,7 @@ if __name__=='__main__':
     else:
         # in SB mode, do grouping over all SBs, then process only the given ones
         if options.sb:
-            sig_cut, dm_cut, tt_cut, ds_cut, ind_full, sb_cut = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
+            sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
                                                                                    dm_min=options.dm_min,
                                                                                    dm_max=options.dm_max,
                                                                                    sig_max=options.sig_max,
@@ -858,6 +858,7 @@ if __name__=='__main__':
         sig_cut, dm_cut, tt_cut, ds_cut, sb_cut = grouped_triggers.T
         ntrig_grouped = len(sig_cut)
         logging.info("-----------------------------\nGrouped down to %d triggers after SB selection" % ntrig_grouped)
+        print("-----------------------------\nGrouped down to %d triggers after SB selection" % ntrig_grouped)
 
         logging.info("DMs: %s" % dm_cut)
         logging.info("S/N: %s" % sig_cut)
