@@ -406,7 +406,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         for tab in range(ntab):
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
             f = filterbank.filterbank(fname)
-            data[tab] = f.get_spectra(start_bin, chunksize)
+            data[tab] = f.get_spectra(start_bin, chunksize).data
             f.close()
         # generate sb
         logging.info("Synthesizing beam {}".format(sb))
@@ -746,6 +746,8 @@ if __name__=='__main__':
         data_dm_time_full = []
         data_freq_time_full = []
         params_full = []
+        if options.sb:
+            data_sb_full = []
 
     if options.multiproc is True:
         import multiprocessing
@@ -858,7 +860,7 @@ if __name__=='__main__':
             snr_comparison = -1
 
         if options.sb:
-            sb = sb_cut[ii]
+            sb = int(sb_cut[ii])
             logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f sb=%f" % (dm_cut[ii], sig_cut[ii], ds_cut[ii],
                                                                                    t0, sb))
         else:
@@ -909,6 +911,8 @@ if __name__=='__main__':
                 data_dm_time_full.append(data_dm_time)
                 data_freq_time_full.append(data_freq_time)
                 params_full.append(params)
+                if options.sb:
+                    data_sb_full.append(sb)
         else:
             logging.info('Not saving data')
 
@@ -924,6 +928,8 @@ if __name__=='__main__':
             data_dm_time_full = []
             data_freq_time_full = []
             params_full = []
+            if options.sb:
+                data_sb_full = []
         else:
             if len(data_dm_time_full)==1:
                 data_dm_time_full = np.array(data_dm_time_full)
@@ -935,14 +941,21 @@ if __name__=='__main__':
             data_dm_time_full = data_dm_time_full.reshape(-1,ndm,ntime_plot)
             data_freq_time_full = data_freq_time_full.reshape(-1,nfreq_plot,ntime_plot)
 
-        fnout = '%s/data%s_full.hdf5' % (basedir, options.tab_str)
+        if options.sb:
+            data_sb_full = np.array(data_sb_full)
+            fnout = '{}/data_sb{}_{}_full.hdf5'.format(basedir, options.sbmin, options.sbmax)
+        else:
+            fnout = '%s/data%s_full.hdf5' % (basedir, options.tab_str)
 
         f = h5py.File(fnout, 'w')
         f.create_dataset('data_freq_time', data=data_freq_time_full)
         f.create_dataset('data_dm_time', data=data_dm_time_full)
         f.create_dataset('params', data=params_full)
         f.create_dataset('ntriggers_skipped', data=[skipped_counter])
-        f.create_dataset('tab', data=np.int(options.tab)*np.ones([len(data_freq_time_full)]))
+        if options.tab is not None:
+            f.create_dataset('tab', data=np.int(options.tab)*np.ones([len(data_freq_time_full)]))
+        elif options.sb:
+            f.create_dataset('sb', data=data_sb_full)
         f.close()
 
         logging.info('Saved all triggers to %s' % fnout)
