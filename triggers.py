@@ -850,6 +850,7 @@ if __name__=='__main__':
     # Initalize SB generator
     if options.sb:
         sb_generator = SBGenerator.from_science_case(science_case=4)
+        sb_generator.reversed = True
     else:
         sb_generator = None
 
