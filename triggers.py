@@ -12,6 +12,7 @@ import glob
 import copy
 import optparse
 import logging
+from threading import Thread
 
 from pypulsar.formats import filterbank, spectra
 
@@ -275,6 +276,17 @@ def fil_trigger(fn_fil, dm0, t0, sig_cut,
     return data, downsamp, downsamp_smear
 
 
+def load_tab_data(fname, start_bin, chunksize, out=None, tab=None):
+    f = filterbank.filterbank(fname)
+    if out is not None:
+        out[tab] = f.get_spectra(start_bin, chunksize).data
+        return
+    else:
+        data = f.get_spectra(start_bin, chunksize).data
+    f.close()
+    return data
+
+
 def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  ndm=50, mk_plot=False, downsamp=1,
                  beamno='', fn_mask=None, nfreq_plot=32,
@@ -403,16 +415,25 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     if options.sb:
         ntab = 12
         data = np.zeros((ntab, nfreq, chunksize))
+        print "Loading {} TAB data".format(ntab)
+        threads = []
         for tab in range(ntab):
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
-            f = filterbank.filterbank(fname)
-            data[tab] = f.get_spectra(start_bin, chunksize).data
-            f.close()
+            thread = Thread(target=load_tab_data, args=[fname, start_bin, chunksize], kwargs={'out': data, 'tab': tab}, name='TAB{}'.format(tab))
+            thread.daemon = True
+            thread.start()
+            threads.append(thread)
+            #f = filterbank.filterbank(fname)
+            #data[tab] = f.get_spectra(start_bin, chunksize).data
+            #f.close()
+        for thread in threads:
+            logging.info("Waiting for loading of {}".format(thread.name))
+            thread.join()
         # generate sb
         logging.info("Synthesizing beam {}".format(sb))
         data = sb_generator.synthesize_beam(data, sb=sb)
         # convert to a spectra object, mimicking filterbank.get_spectra
-        data = spectra.Spectra(rawdatafile.frequencies, rawdatafile.tsamp, data.T,
+        data = spectra.Spectra(rawdatafile.frequencies, rawdatafile.tsamp, data,
                                starttime=start_bin*rawdatafile.tsamp, dm=0)
     else:
         data = rawdatafile.get_spectra(start_bin, chunksize)
@@ -850,7 +871,6 @@ if __name__=='__main__':
     # Initalize SB generator
     if options.sb:
         sb_generator = SBGenerator.from_science_case(science_case=4)
-        sb_generator.reversed = True
     else:
         sb_generator = None
 
@@ -862,7 +882,7 @@ if __name__=='__main__':
 
         if options.sb:
             sb = int(sb_cut[ii])
-            logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f sb=%f" % (dm_cut[ii], sig_cut[ii], ds_cut[ii],
+            logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f sb=%d" % (dm_cut[ii], sig_cut[ii], ds_cut[ii],
                                                                                    t0, sb))
         else:
             sb = None
