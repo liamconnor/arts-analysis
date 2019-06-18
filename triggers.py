@@ -415,7 +415,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     if options.sb:
         ntab = 12
         data = np.zeros((ntab, nfreq, chunksize))
-        print "Loading {} TAB data".format(ntab)
         threads = []
         for tab in range(ntab):
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
