@@ -965,7 +965,7 @@ if __name__=='__main__':
 
         if options.sb:
             data_sb_full = np.array(data_sb_full)
-            fnout = '{}/data_sb{}_{}_full.hdf5'.format(basedir, options.sbmin, options.sbmax)
+            fnout = '{}/data_sb{:02d}_{:02d}_full.hdf5'.format(basedir, options.sbmin, options.sbmax)
         else:
             fnout = '%s/data%s_full.hdf5' % (basedir, options.tab_str)
 
