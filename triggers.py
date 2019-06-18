@@ -415,8 +415,14 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     if options.sb:
         ntab = 12
         data = np.zeros((ntab, nfreq, chunksize))
+        # get list of unique TABs in required SB
+        sb_map = list(set(sb_generator.get_map(sb)))
+        logging.info("SB {} consists of beams {}".format(sb, sb_map))
         threads = []
         for tab in range(ntab):
+            # skip if we do not need this TAB
+            if not tab in sb_map:
+                continue
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
             thread = Thread(target=load_tab_data, args=[fname, start_bin, chunksize], kwargs={'out': data, 'tab': tab}, name='TAB{}'.format(tab))
             thread.daemon = True
