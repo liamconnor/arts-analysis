@@ -338,7 +338,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     """
 
     try:
-        rfimask = np.loadtxt('/home/arts/ARTS-obs/amber_conf/zapped_channels_{:.0f}.conf'.format(freq))
+        rfimask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(freq))
         rfimask = rfimask.astype(int)
     except:
         rfimask = []
