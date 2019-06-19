@@ -341,7 +341,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         rfimask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(freq))
         rfimask = rfimask.astype(int)
     except:
-        rfimask = []
+        rfimask = np.array([])
         logging.warning("Could not load dumb RFIMask")
 
     SNRtools = tools.SNR_Tools()
@@ -749,7 +749,7 @@ if __name__=='__main__':
 
     parser.add_option('--sbmax', type=int, default=70, help="Last SB to process data for (Default: 70)")
 
-    parser.add_option('--central_freq', type=int, default=1370, 
+    parser.add_option('--central_freq', dest='freq', type=int, default=1370, 
                       help="Central frequency in zapped channels filename (Default: 1370)")
 
     logfn = time.strftime("%Y%m%d-%H%M") + '.log'
