@@ -417,7 +417,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         data = np.zeros((ntab, nfreq, chunksize))
         # get list of unique TABs in required SB
         sb_map = list(set(sb_generator.get_map(sb)))
-        logging.info("SB {} consists of beams {}".format(sb, sb_map))
+        logging.info("SB {} consists of TABs {}".format(sb, sb_map))
         threads = []
         for tab in range(ntab):
             # skip if we do not need this TAB
@@ -442,7 +442,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                                starttime=start_bin*rawdatafile.tsamp, dm=0)
     else:
         data = rawdatafile.get_spectra(start_bin, chunksize)
-        rawdatafile.close()
+    rawdatafile.close()
     # apply dumb mask
     data.data[rfimask] = 0.
 
@@ -749,6 +749,9 @@ if __name__=='__main__':
 
     parser.add_option('--sbmax', type=int, default=70, help="Last SB to process data for (Default: 70)")
 
+    parser.add_option('--central_freq', type=int, default=1370, 
+                      help="Central frequency in zapped channels filename (Default: 1370)")
+
     logfn = time.strftime("%Y%m%d-%H%M") + '.log'
     logging.basicConfig(format='%(asctime)s %(message)s',
                     level=logging.INFO, filename=logfn)
@@ -915,7 +918,7 @@ if __name__=='__main__':
                                         n_iter_frequency=options.n_iter_frequency,
                                         clean_type=options.clean_type,
                                         sb_generator=sb_generator,
-                                        sb=sb)
+                                        sb=sb, freq=options.freq)
 
         if len(data_dm_time)==0:
             skipped_counter += 1
