@@ -369,6 +369,7 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     downsample = np.delete(downsample, bad_sig_ind)
     sig_cut, dm_cut, tt_cut, ds_cut = [], [], [], []
     if read_beam:
+        beam = np.delete(beam, bad_sig_ind)
         beam_cut = []
 
     if len(tt) == 0:
