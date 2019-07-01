@@ -424,16 +424,17 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
             if not tab in sb_map:
                 continue
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
-            thread = Thread(target=load_tab_data, args=[fname, start_bin, chunksize], kwargs={'out': data, 'tab': tab}, name='TAB{}'.format(tab))
-            thread.daemon = True
-            thread.start()
-            threads.append(thread)
+            load_tab_data(fname, start_bin, chunksize, out=data, tab=tab)
+            #thread = Thread(target=load_tab_data, args=[fname, start_bin, chunksize], kwargs={'out': data, 'tab': tab}, name='TAB{}'.format(tab))
+            #thread.daemon = True
+            #thread.start()
+            #threads.append(thread)
             #f = filterbank.filterbank(fname)
             #data[tab] = f.get_spectra(start_bin, chunksize).data
             #f.close()
-        for thread in threads:
-            logging.info("Waiting for loading of {}".format(thread.name))
-            thread.join()
+        #for thread in threads:
+        #    logging.info("Waiting for loading of {}".format(thread.name))
+        #    thread.join()
         # generate sb
         logging.info("Synthesizing beam {}".format(sb))
         data = sb_generator.synthesize_beam(data, sb=sb)
