@@ -12,11 +12,19 @@ import glob
 import copy
 import optparse
 import logging
+from threading import Thread
 
-from pypulsar.formats import filterbank
+from pypulsar.formats import filterbank, spectra
+
+try:
+    from darc.sb_generator import SBGenerator
+    HAVE_SB = True
+except ImportError:
+    HAVE_SB = False
 
 import tools
 import plotter
+
 
 def get_mask(rfimask, startsamp, N):
     """Return an array of boolean values to act as a mask
@@ -40,11 +48,13 @@ def get_mask(rfimask, startsamp, N):
         mask[blocknums==blocknum] = blockmask
     return mask.T[::-1]
 
+
 def multiproc_dedisp(dm):
     datacopy.dedisperse(dm)
     data_freq_time = datacopy[:, t_min:t_max]
 
     return (datacopy.data.mean(0), data_freq_time)
+
 
 def get_single_trigger(fn_fil, fn_trig, row=0, ntime_plot=250):
     dm0, sig_cut, t0, downsamp = tools.read_singlepulse(fn_trig)
@@ -59,6 +69,7 @@ def get_single_trigger(fn_fil, fn_trig, row=0, ntime_plot=250):
                  outdir='./', sig_thresh_local=7.0)
 
     return data, dm0, sig_cut, t0, downsamp, downsamp_smear
+
 
 def sys_temperature_bandpass(data):
     """Bandpass calibrate based on system temperature.
@@ -104,6 +115,7 @@ def remove_noisy_freq(data, sigma_threshold):
         kurt[bad_chans] = np.mean(kurt)
     data[bad_chans,:] = 0
 
+
 def remove_noisy_channels(data, sigma_threshold=2, iters=10):
     """Flag frequency channels with high variance.
     To be effective, data should be bandpass calibrated in some way.
@@ -117,6 +129,7 @@ def remove_noisy_channels(data, sigma_threshold=2, iters=10):
     data[bad_chans] = 0.
 
     return data
+
 
 def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
               n_iter_time=3, n_iter_frequency=3, clean_type='time'):
@@ -180,6 +193,7 @@ def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
             data.data[maskt] = np.median(dtmean)#dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)[maskt]
 
     return data
+
 
 def fil_trigger(fn_fil, dm0, t0, sig_cut,
                  ndm=50, mk_plot=False, downsamp=1,
@@ -261,6 +275,18 @@ def fil_trigger(fn_fil, dm0, t0, sig_cut,
 
     return data, downsamp, downsamp_smear
 
+
+def load_tab_data(fname, start_bin, chunksize, out=None, tab=None):
+    f = filterbank.filterbank(fname)
+    if out is not None:
+        out[tab] = f.get_spectra(start_bin, chunksize).data
+        return
+    else:
+        data = f.get_spectra(start_bin, chunksize).data
+    f.close()
+    return data
+
+
 def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  ndm=50, mk_plot=False, downsamp=1,
                  beamno='', fn_mask=None, nfreq_plot=32,
@@ -270,7 +296,8 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  outdir='./', sig_thresh_local=5.0,
                  subtract_zerodm=False,
                  threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
-                 n_iter_time=3, n_iter_frequency=3, clean_type='time'):
+                 n_iter_time=3, n_iter_frequency=3, clean_type='time', freq=1370,
+                 sb_generator=None, sb=None):
     """ Locate data within filterbank file (fn_fi)
     at some time t0, and dedisperse to dm0, generating
     plots
@@ -295,6 +322,12 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         beam number, for fig names
     nfreq_plot : int
         number of frequencies channels to plot
+    freq       : int
+        central frequency used to find zapped channels file
+    sb_generator: SBGenerator object
+        synthesized beam mapper from DARC (None for TAB/IAB)
+    sb         : int
+        synthesized beam to generate (None for TAB/IAB)
 
     Returns:
     -------
@@ -305,17 +338,22 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     """
 
     try:
-        rfimask = np.loadtxt('/home/arts/ARTS-obs/amber_conf/zapped_channels_1400.conf')
+        rfimask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(freq))
         rfimask = rfimask.astype(int)
     except:
-        rfimask = []
+        rfimask = np.array([])
         logging.warning("Could not load dumb RFIMask")
 
     SNRtools = tools.SNR_Tools()
     downsamp = min(4096, downsamp)
+
+    # store path to filterbanks
+    if options.sb:
+        prefix_fil = fn_fil
+        # get first file
+        fn_fil = prefix_fil + '_00.fil'
     rawdatafile = filterbank.filterbank(fn_fil)
     dfreq_MHz = rawdatafile.header['foff']
-    mask = []
 
     dt = rawdatafile.header['tsamp']
     freq_up = rawdatafile.header['fch1']
@@ -323,7 +361,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     # fix RFI mask order
     rfimask = nfreq - rfimask
     freq_low = freq_up + nfreq*rawdatafile.header['foff']
-    ntime_fil = (os.path.getsize(fn_fil) - 467.)/nfreq
+    ntime_fil = (os.path.getsize(fn_fil) - rawdatafile.header_size)/nfreq
     tdm = np.abs(8.3*1e-6*dm0*dfreq_MHz*(freq_low/1000.)**-3)
 
     dm_min = max(0, dm0-40)
@@ -344,11 +382,8 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     downsamp_res = int(downsamp//downsamp_smear)
     downsamp = int(downsamp_res*downsamp_smear)
     time_res = dt * downsamp
-    tplot = ntime_plot * downsamp
     logging.info("Width_full:%d  Width_smear:%d  Width_res: %d" %
                  (downsamp, downsamp_smear, downsamp_res))
-#    print("Width_full:%d  Width_smear:%d  Width_res: %d" %
-#        (downsamp, downsamp_smear, downsamp_res))
 
     start_bin = int(t0/dt - ntime_plot*downsamp//2)
     width = abs(4.148e3 * dm0 * (freq_up**-2 - freq_low**-2))
@@ -374,9 +409,41 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     if ntime_fil < (start_bin+chunksize):
         logging.info("Trigger at end of file, skipping")
 #        print("Trigger at end of file, skipping")
-        return [],[],[],[]
+        return [], [], [], []
 
-    data = rawdatafile.get_spectra(start_bin, chunksize)
+    # get data of all files (SB) or one file (TAB/IAB)
+    if options.sb:
+        ntab = 12
+        data = np.zeros((ntab, nfreq, chunksize))
+        # get list of unique TABs in required SB
+        sb_map = list(set(sb_generator.get_map(sb)))
+        logging.info("SB {} consists of TABs {}".format(sb, sb_map))
+        threads = []
+        for tab in range(ntab):
+            # skip if we do not need this TAB
+            if not tab in sb_map:
+                continue
+            fname = prefix_fil + '_{:02d}.fil'.format(tab)
+            load_tab_data(fname, start_bin, chunksize, out=data, tab=tab)
+            #thread = Thread(target=load_tab_data, args=[fname, start_bin, chunksize], kwargs={'out': data, 'tab': tab}, name='TAB{}'.format(tab))
+            #thread.daemon = True
+            #thread.start()
+            #threads.append(thread)
+            #f = filterbank.filterbank(fname)
+            #data[tab] = f.get_spectra(start_bin, chunksize).data
+            #f.close()
+        #for thread in threads:
+        #    logging.info("Waiting for loading of {}".format(thread.name))
+        #    thread.join()
+        # generate sb
+        logging.info("Synthesizing beam {}".format(sb))
+        data = sb_generator.synthesize_beam(data, sb=sb)
+        # convert to a spectra object, mimicking filterbank.get_spectra
+        data = spectra.Spectra(rawdatafile.frequencies, rawdatafile.tsamp, data,
+                               starttime=start_bin*rawdatafile.tsamp, dm=0)
+    else:
+        data = rawdatafile.get_spectra(start_bin, chunksize)
+    rawdatafile.close()
     # apply dumb mask
     data.data[rfimask] = 0.
 
@@ -429,7 +496,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
             del ddm, df
     else:
         logging.info("\nDedispersing Serially\n")
-        #print("\nDedispersing Serially\n")
         for jj, dm_ in enumerate(dms):
             tcopy = time.time()
             data_copy = copy.deepcopy(data)
@@ -442,8 +508,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
             logging.info("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" %
                          (dm_, t0, downsamp, sig_cut))
-#            print("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" %
-#                        (dm_, t0, downsamp, sig_cut))
 
             if jj==dm_max_jj:
                 data_dm_max = data_copy.data[:, max(0, t_min):t_max]
@@ -460,12 +524,10 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     full_freq_arr_downsamp = full_freq_arr_downsamp[:, :ntime//downsamp_res*downsamp_res\
                                    ].reshape(-1, ntime//downsamp_res, downsamp_res).mean(-1)
 
-#    snr_max = SNRtools.calc_snr_mad(full_freq_arr_downsamp.mean(0))
-
     if snr_max < sig_thresh_local:
         logging.info("\nSkipping trigger below local threshold %.2f:" % sig_thresh_local)
         logging.info("snr_local=%.2f  snr_trigger=%.2f\n" % (snr_max, sig_cut))
-        return [],[],[],[]
+        return [], [], [], []
 
     times = np.linspace(0, ntime_plot*downsamp*dt, len(full_freq_arr_downsamp[0]))
 
@@ -478,7 +540,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     suptitle = " CB:%s  S/N$_{pipe}$:%.1f  S/N$_{presto}$:%.1f\
                  S/N$_{compare}$:%.1f \nDM:%d  t:%.1fs  width:%d" %\
-                 (beamno, sig_cut, snr_max, snr_comparison, \
+                 (beamno, sig_cut, snr_max, snr_comparison,
                     dms[dm_max_jj], t0, downsamp)
 
     if not os.path.isdir('%s/plots' % outdir):
@@ -494,7 +556,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     if mk_plot is True:
         logging.info(fn_fig_out)
 
-        if ndm==1:
+        if ndm == 1:
             plotter.plot_two_panel(full_freq_arr_downsamp, params, prob=None,
                                    freq_low=freq_low, freq_up=freq_up,
                                    cand_no=cand_no, times=times, suptitle=suptitle,
@@ -508,6 +570,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                                      cand_no=cand_no)
 
     return full_dm_arr_downsamp, full_freq_arr_downsamp, time_res, params
+
 
 def h5_writer(data_freq_time, data_dm_time,
               dm0, t0, snr, beamno='', basedir='./',
@@ -541,6 +604,7 @@ def h5_writer(data_freq_time, data_dm_time,
 
     logging.info("Wrote to file %s" % fnout)
 
+
 def file_reader(fn, ftype='hdf5'):
     if ftype is 'hdf5':
         f = h5py.File(fn, 'r')
@@ -560,123 +624,134 @@ def file_reader(fn, ftype='hdf5'):
 
         return data
 
+
 if __name__=='__main__':
-# Example usage
-# python triggers.py /data/09/filterbank/20171107/2017.11.07-01:27:36.B0531+21/CB21.fil\
-#     CB21_2017.11.07-01:27:36.B0531+21.trigger --sig_thresh 12.0 --mk_plot False
+    # Example usage
+    # python triggers.py /data/09/filterbank/20171107/2017.11.07-01:27:36.B0531+21/CB21.fil\
+    #     CB21_2017.11.07-01:27:36.B0531+21.trigger --sig_thresh 12.0 --mk_plot False
 
-    parser = optparse.OptionParser(prog="triggers.py", \
-                        version="", \
-                        usage="%prog FN_FILTERBANK_PREFIX FN_TRIGGERS [OPTIONS]", \
-                        description="Create diagnostic plots for individual triggers")
+    parser = optparse.OptionParser(prog="triggers.py",
+                                   version="",
+                                   usage="%prog FN_FILTERBANK_PREFIX FN_TRIGGERS [OPTIONS]",
+                                   description="Create diagnostic plots for individual triggers")
 
-    parser.add_option('--sig_thresh', dest='sig_thresh', type='float', \
-                        help="Only process events above >sig_thresh S/N" \
-                                "(Default: 8.0)", default=8.0)
+    parser.add_option('--sig_thresh', dest='sig_thresh', type='float',
+                      help="Only process events above >sig_thresh S/N" \
+                           "(Default: 8.0)", default=8.0)
 
-    parser.add_option('--sig_max', dest='sig_max', type='float', \
-                        help="Only process events above <sig_max S/N" \
-                                "(Default: 8.0)", default=np.inf)
+    parser.add_option('--sig_max', dest='sig_max', type='float',
+                      help="Only process events above <sig_max S/N" \
+                           "(Default: 8.0)", default=np.inf)
 
-    parser.add_option('--ndm', dest='ndm', type='int', \
-                        help="Number of DMs to use in DM transform (Default: 50).", \
-                        default=1)
+    parser.add_option('--ndm', dest='ndm', type='int',
+                      help="Number of DMs to use in DM transform (Default: 50).",
+                      default=1)
 
-    parser.add_option('--mask', dest='maskfile', type='string', \
-                        help="Mask file produced by rfifind. (Default: No Mask).", \
-                        default=None)
+    parser.add_option('--mask', dest='maskfile', type='string',
+                      help="Mask file produced by rfifind. (Default: No Mask).",
+                      default=None)
 
     parser.add_option('--save_data', dest='save_data', type='str',
-                        help="save each trigger's data. 0=don't save. \
-                        hdf5 = save to hdf5. npy=save to npy. concat to \
-                        save all triggers into one file",
-                        default='hdf5')
+                      help="save each trigger's data. 0=don't save. \
+                      hdf5 = save to hdf5. npy=save to npy. concat to \
+                      save all triggers into one file",
+                      default='hdf5')
 
     parser.add_option('--ntrig', dest='ntrig', type='int',
-                        help="Only process this many triggers",
-                        default=None)
+                      help="Only process this many triggers",
+                      default=None)
 
-    parser.add_option('--mk_plot', dest='mk_plot', action='store_true', \
-                        help="make plot if True (default False)", default=False)
+    parser.add_option('--mk_plot', dest='mk_plot', action='store_true',
+                      help="make plot if True (default False)", default=False)
 
-    parser.add_option('--multiproc', dest='multiproc', action='store_true', \
-                        help="use multicores if True (default False)", default=False)
+    parser.add_option('--multiproc', dest='multiproc', action='store_true',
+                      help="use multicores if True (default False)", default=False)
 
-    parser.add_option('--rficlean', dest='rficlean', action='store_true', \
-                        help="use rficlean if True (default False)", default=False)
+    parser.add_option('--rficlean', dest='rficlean', action='store_true',
+                      help="use rficlean if True (default False)", default=False)
 
-    parser.add_option('--threshold_time', dest='threshold_time', action='store_true', \
-                        help="If rficlean is True, defines threshold for time-domain clean (default 3.25)",
-                        default=3.25)
+    parser.add_option('--threshold_time', dest='threshold_time', action='store_true',
+                      help="If rficlean is True, defines threshold for time-domain clean (default 3.25)",
+                      default=3.25)
 
-    parser.add_option('--threshold_frequency', dest='threshold_frequency', type=float, \
-                        help="If rficlean is True, defines threshold for freqency-domain clean (default 2.5)",
-                        default=2.75)
+    parser.add_option('--threshold_frequency', dest='threshold_frequency', type=float,
+                      help="If rficlean is True, defines threshold for freqency-domain clean (default 2.5)",
+                      default=2.75)
 
-    parser.add_option('--bin_size', dest='bin_size', action='store_true', \
-                        help="If rficlean is True, defines bin size for bandpass removal (default 32)",
-                        default=32)
+    parser.add_option('--bin_size', dest='bin_size', action='store_true',
+                      help="If rficlean is True, defines bin size for bandpass removal (default 32)",
+                      default=32)
 
-    parser.add_option('--n_iter_time', dest='n_iter_time', action='store_true', \
-                        help="If rficlean is True, defines number of iteration for time-domain clean (default 3)",
-                        default=3)
+    parser.add_option('--n_iter_time', dest='n_iter_time', action='store_true',
+                      help="If rficlean is True, defines number of iteration for time-domain clean (default 3)",
+                      default=3)
 
-    parser.add_option('--n_iter_frequency', dest='n_iter_frequency', action='store_true', \
-                        help="If rficlean is True, defines number of iteration for frequency-domain clean (default 3)",
-                        default=3)
+    parser.add_option('--n_iter_frequency', dest='n_iter_frequency', action='store_true',
+                      help="If rficlean is True, defines number of iteration for frequency-domain clean (default 3)",
+                      default=3)
 
-    parser.add_option('--clean_type', dest='clean_type', \
-                        help="If rficlean is True, defines type of clean (default 'time')",
-                        choices=['time', 'freqency', 'both'], default='time')
+    parser.add_option('--clean_type', dest='clean_type',
+                      help="If rficlean is True, defines type of clean (default 'time')",
+                      choices=['time', 'freqency', 'both'], default='time')
 
-    parser.add_option('--subtract_zerodm', dest='subtract_zerodm', action='store_true', \
-                        help="use DM=0 timestream subtraction if True (default False)", default=False)
+    parser.add_option('--subtract_zerodm', dest='subtract_zerodm', action='store_true',
+                      help="use DM=0 timestream subtraction if True (default False)", default=False)
 
     parser.add_option('--nfreq_plot', dest='nfreq_plot', type='int',
-                        help="make plot with this number of freq channels",
-                        default=32)
+                      help="make plot with this number of freq channels",
+                      default=32)
 
     parser.add_option('--ntime_plot', dest='ntime_plot', type='int',
-                        help="make plot with this number of time samples",
-                        default=250)
+                      help="make plot with this number of time samples",
+                      default=250)
 
     parser.add_option('--cmap', dest='cmap', type='str',
-                        help="imshow colourmap",
-                        default='RdBu')
+                      help="imshow colourmap",
+                      default='RdBu')
 
     parser.add_option('--dm_min', dest='dm_min', type='float',
-                        help="",
-                        default=10.0)
+                      help="",
+                      default=10.0)
 
     parser.add_option('--time_limit', dest='time_limit', type='float',
-                        help="Total time to spend processing in seconds",
-                        default=np.inf)
+                      help="Total time to spend processing in seconds",
+                      default=np.inf)
 
     parser.add_option('--dm_max', dest='dm_max', type='float',
-                        help="",
-                        default=np.inf)
+                      help="",
+                      default=np.inf)
 
     parser.add_option('--sig_thresh_local', dest='sig_thresh_local', type='float',
-                        help="",
-                        default=0.0)
+                      help="",
+                      default=0.0)
 
     parser.add_option('--outdir', dest='outdir', type='str',
-                        help="directory to write data to",
-                        default='./data/')
+                      help="directory to write data to",
+                      default='./data/')
 
     parser.add_option('--compare_trig', dest='compare_trig', type='str',
-                        help="Compare input triggers with another trigger file",
-                        default=None)
+                      help="Compare input triggers with another trigger file",
+                      default=None)
 
     parser.add_option('--beamno', dest='beamno', type='str',
-                        help="Beam number of input data",
-                        default='')
+                      help="Beam number of input data",
+                      default='')
 
-    parser.add_option('--descending_snr', dest='descending_snr', action='store_true', \
-                        help="Process from highest to lowest S/N if True (default False)", default=False)
+    parser.add_option('--descending_snr', dest='descending_snr', action='store_true',
+                      help="Process from highest to lowest S/N if True (default False)", default=False)
 
-    parser.add_option('--tab', dest='tab', type=int, \
-                        help="TAB to process (0 for IAB) (default: 0)", default=0)
+    parser.add_option('--tab', dest='tab', type=int,
+                      help="TAB to process (0 for IAB) (default: 0)", default=0)
+
+    parser.add_option('--synthesized_beams', dest='sb', action='store_true',
+                      help="Process synthesized beams")
+
+    parser.add_option('--sbmin', type=int, default=0, help="First SB to process data for (Default: 0)")
+
+    parser.add_option('--sbmax', type=int, default=70, help="Last SB to process data for (Default: 70)")
+
+    parser.add_option('--central_freq', dest='freq', type=int, default=1370, 
+                      help="Central frequency in zapped channels filename (Default: 1370)")
 
     logfn = time.strftime("%Y%m%d-%H%M") + '.log'
     logging.basicConfig(format='%(asctime)s %(message)s',
@@ -686,8 +761,14 @@ if __name__=='__main__':
 
     options, args = parser.parse_args()
 
-    options.tab_str = "_{:02d}".format(options.tab)
+    # Explicitly disable TAB if SB is enabled
+    if options.sb:
+        options.tab = None
+    else:
+        options.tab_str = "_{:02d}".format(options.tab)
 
+    # TAB: filterbank filename is specified
+    # SB: filterbank prefix is specified (i.e. without _<TABno>.fil)
     fn_fil = args[0]
     fn_sp = args[1]
 
@@ -695,6 +776,8 @@ if __name__=='__main__':
         data_dm_time_full = []
         data_freq_time_full = []
         params_full = []
+        if options.sb:
+            data_sb_full = []
 
     if options.multiproc is True:
         import multiprocessing
@@ -718,11 +801,19 @@ if __name__=='__main__':
         sig_cut, dm_cut, tt_cut, ds_cut, ind_full = par_1[0], par_1[1], \
                                 par_1[2], par_1[3], par_1[4]
     else:
-        sig_cut, dm_cut, tt_cut, ds_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
-                                                         dm_min=options.dm_min,
-                                                         dm_max=options.dm_max,
-                                                         sig_max=options.sig_max,
-                                                         t_window=0.5, tab=options.tab)
+        # in SB mode, do grouping over all SBs, then process only the given ones
+        if options.sb:
+            sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
+                                                                                   dm_min=options.dm_min,
+                                                                                   dm_max=options.dm_max,
+                                                                                   sig_max=options.sig_max,
+                                                                                   t_window=0.5, read_beam=True)
+        else:
+            sig_cut, dm_cut, tt_cut, ds_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
+                                                                           dm_min=options.dm_min,
+                                                                           dm_max=options.dm_max,
+                                                                           sig_max=options.sig_max,
+                                                                           t_window=0.5, tab=options.tab)
 
     if options.descending_snr:
         sig_index = np.argsort(sig_cut)[::-1]
@@ -731,6 +822,8 @@ if __name__=='__main__':
         tt_cut = tt_cut[sig_index]
         ds_cut = ds_cut[sig_index]
         ind_full = ind_full[sig_index]
+        if options.sb:
+            sb_cut = sb_cut[sig_index]
 
     ntrig_grouped = len(sig_cut)
     logging.info("-----------------------------\nGrouped down to %d triggers" % ntrig_grouped)
@@ -738,14 +831,16 @@ if __name__=='__main__':
     logging.info("DMs: %s" % dm_cut)
     logging.info("S/N: %s" % sig_cut)
 
-    grouped_triggers = np.empty([ntrig_grouped, 4])
-    grouped_triggers[:,0] = sig_cut
-    grouped_triggers[:,1] = dm_cut
-    grouped_triggers[:,2] = tt_cut
-    grouped_triggers[:,3] = ds_cut
-
-    #np.savetxt('grouped_pulses{}.singlepulse'.format(options.tab_str),
-    #            grouped_triggers, fmt='%0.2f %0.1f %0.3f %0.1f')
+    if options.sb:
+        grouped_triggers = np.empty([ntrig_grouped, 5])
+    else:
+        grouped_triggers = np.empty([ntrig_grouped, 4])
+    grouped_triggers[:, 0] = sig_cut
+    grouped_triggers[:, 1] = dm_cut
+    grouped_triggers[:, 2] = tt_cut
+    grouped_triggers[:, 3] = ds_cut
+    if options.sb:
+        grouped_triggers[:, 4] = sb_cut
 
     ndm = options.ndm
     nfreq_plot = options.nfreq_plot
@@ -755,8 +850,27 @@ if __name__=='__main__':
     if not os.path.isdir(basedir):
         os.system('mkdir -p %s' % basedir)
 
-    np.savetxt(options.outdir+'/grouped_pulses{}.singlepulse'.format(options.tab_str),
-                grouped_triggers, fmt='%0.2f %0.1f %0.3f %0.1f')
+    # only if SB 0 is included, write the grouped pulses file to file to avoid writing it several times
+    # beam number is only included as last column in SB case
+    if options.sb and (options.sbmin == 0):
+        np.savetxt(options.outdir + '/grouped_pulses_synthesized_beams.singlepulse',
+                   grouped_triggers, fmt='%0.2f %0.1f %0.3f %0.1f %0.0f')
+    elif not options.sb:
+        np.savetxt(options.outdir+'/grouped_pulses{}.singlepulse'.format(options.tab_str),
+                    grouped_triggers, fmt='%0.2f %0.1f %0.3f %0.1f')
+
+
+    # if SB, only select triggers in given sb range
+    if options.sb:
+        mask = np.where((sb_cut >= options.sbmin) & (sb_cut <= options.sbmax))
+        grouped_triggers = grouped_triggers[mask]
+        sig_cut, dm_cut, tt_cut, ds_cut, sb_cut = grouped_triggers.T
+        ntrig_grouped = len(sig_cut)
+        logging.info("-----------------------------\nGrouped down to %d triggers after SB selection" % ntrig_grouped)
+        print("-----------------------------\nGrouped down to %d triggers after SB selection" % ntrig_grouped)
+
+        logging.info("DMs: %s" % dm_cut)
+        logging.info("S/N: %s" % sig_cut)
 
     skipped_counter = 0
     ii = None
@@ -764,14 +878,28 @@ if __name__=='__main__':
 #    tt_cut += 4148*dm_cut*(-1400**-2 + 1549.78**-2)
 #    ds_cut = (ds_cut/8.192e-5).astype(int) # hack
 
+    # Initalize SB generator
+    if options.sb:
+        sb_generator = SBGenerator.from_science_case(science_case=4)
+        sb_generator.reversed = True
+    else:
+        sb_generator = None
+
     for ii, t0 in enumerate(tt_cut[:options.ntrig]):
         try:
             snr_comparison = snr_comparison_arr[ii]
         except:
-            snr_comparison=-1
+            snr_comparison = -1
 
-        logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f" % (dm_cut[ii], sig_cut[ii], ds_cut[ii], t0))
-        data_dm_time, data_freq_time, time_res, params = proc_trigger(\
+        if options.sb:
+            sb = int(sb_cut[ii])
+            logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f sb=%d" % (dm_cut[ii], sig_cut[ii], ds_cut[ii],
+                                                                                   t0, sb))
+        else:
+            sb = None
+            logging.info("\nStarting DM=%0.2f S/N=%0.2f width=%d time=%f" % (dm_cut[ii], sig_cut[ii], ds_cut[ii], t0))
+
+        data_dm_time, data_freq_time, time_res, params = proc_trigger(
                                         fn_fil, dm_cut[ii], t0, sig_cut[ii],
                                         mk_plot=options.mk_plot, ndm=options.ndm,
                                         downsamp=ds_cut[ii], nfreq_plot=options.nfreq_plot,
@@ -781,13 +909,17 @@ if __name__=='__main__':
                                         rficlean=options.rficlean,
                                         snr_comparison=snr_comparison,
                                         outdir=options.outdir,
-                                                                      beamno=options.beamno, sig_thresh_local=options.sig_thresh_local, subtract_zerodm=options.subtract_zerodm,
-                                          threshold_time=options.threshold_time,
-                                          threshold_frequency=options.threshold_frequency,
-                                          bin_size=options.bin_size,
-                                          n_iter_time=options.n_iter_time,
-                                          n_iter_frequency=options.n_iter_frequency,
-                                          clean_type=options.clean_type)
+                                        beamno=options.beamno,
+                                        sig_thresh_local=options.sig_thresh_local,
+                                        subtract_zerodm=options.subtract_zerodm,
+                                        threshold_time=options.threshold_time,
+                                        threshold_frequency=options.threshold_frequency,
+                                        bin_size=options.bin_size,
+                                        n_iter_time=options.n_iter_time,
+                                        n_iter_frequency=options.n_iter_frequency,
+                                        clean_type=options.clean_type,
+                                        sb_generator=sb_generator,
+                                        sb=sb, freq=options.freq)
 
         if len(data_dm_time)==0:
             skipped_counter += 1
@@ -804,13 +936,15 @@ if __name__=='__main__':
                 fnout_dm_time = '%s/data%s_snr%d_dm%d_t0%f_dm.npy'\
                          % (basedir, options.tab_str, sig_cut[ii], dm_cut[ii], np.round(t0, 2))
 
-                np.save(fnout_freq_time, data_freqtime)
-                np.save(fnout_dm_time, data_dmtime)
+                np.save(fnout_freq_time, data_freq_time)
+                np.save(fnout_dm_time, data_dm_time)
 
             elif options.save_data == 'concat':
                 data_dm_time_full.append(data_dm_time)
                 data_freq_time_full.append(data_freq_time)
                 params_full.append(params)
+                if options.sb:
+                    data_sb_full.append(sb)
         else:
             logging.info('Not saving data')
 
@@ -826,6 +960,8 @@ if __name__=='__main__':
             data_dm_time_full = []
             data_freq_time_full = []
             params_full = []
+            if options.sb:
+                data_sb_full = []
         else:
             if len(data_dm_time_full)==1:
                 data_dm_time_full = np.array(data_dm_time_full)
@@ -837,14 +973,21 @@ if __name__=='__main__':
             data_dm_time_full = data_dm_time_full.reshape(-1,ndm,ntime_plot)
             data_freq_time_full = data_freq_time_full.reshape(-1,nfreq_plot,ntime_plot)
 
-        fnout = '%s/data%s_full.hdf5' % (basedir, options.tab_str)
+        if options.sb:
+            data_sb_full = np.array(data_sb_full)
+            fnout = '{}/data_sb{:02d}_{:02d}_full.hdf5'.format(basedir, options.sbmin, options.sbmax)
+        else:
+            fnout = '%s/data%s_full.hdf5' % (basedir, options.tab_str)
 
         f = h5py.File(fnout, 'w')
         f.create_dataset('data_freq_time', data=data_freq_time_full)
         f.create_dataset('data_dm_time', data=data_dm_time_full)
         f.create_dataset('params', data=params_full)
         f.create_dataset('ntriggers_skipped', data=[skipped_counter])
-        f.create_dataset('tab', data=np.int(options.tab)*np.ones([len(data_freq_time_full)]))
+        if options.tab is not None:
+            f.create_dataset('tab', data=np.int(options.tab)*np.ones([len(data_freq_time_full)]))
+        elif options.sb:
+            f.create_dataset('sb', data=data_sb_full)
         f.close()
 
         logging.info('Saved all triggers to %s' % fnout)
