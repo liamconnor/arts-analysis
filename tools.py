@@ -341,6 +341,7 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     """
     if tab is not None:
         beam_amber = tab
+        read_beam = False
     elif read_beam:
         beam_amber = 'all'
     else:
