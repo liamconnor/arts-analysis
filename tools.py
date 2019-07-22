@@ -567,6 +567,75 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
     plt.suptitle(suptitle_, fontsize=20)
     plt.show()
 
+def cb_snr(fdir, ncb=40, dm_min=0., 
+           dm_max=np.inf, sig_thresh=6.0, cb_ref=0):
+    """ Get max S/N event across all SBs within a CB, 
+    then find triggers at common time 
+    across all CBs. 
+
+    Parameters
+    ----------
+    fdir : str
+        name of directory with CBXX.trigger files 
+    ncb  : int 
+        number of compound beams to read in (default 00--39)
+    dm_min
+        min dm 
+    dm_max 
+        max dm 
+    sig_thresh : 
+        minimum S/N to read in during dm/time clustering 
+    cb_ref : int 
+        will search in this CB for reference pulses 
+
+    Returns
+    -------
+
+    Array of S/N (ntrig, ncb) each element is the 
+    S/N of a given CB for a given pulse.
+    """
+    cbarr, dm, sig, tt = [],[],[],[]
+#    fdir = '/data1/candidates/FRB190709/2019-07-09-06:00:17.B0531+21/'
+#    fdir = '/tank/users/connor/localization/20190707/'
+
+    # First read in all triggers, make large array including CB information
+    for ii in range(ncb):
+        fn = fdir + '/CB%.2d.trigger' % ii
+        try:
+            sig_cut, dm_cut, tt_cut, ds_cut, ind_full = get_triggers(fn, 
+                                    sig_thresh=sig_thresh, dm_min=dm_min, dm_max=dm_max)
+            cbarr.append(np.ones_like(sig_cut)*ii)
+            dm.append(dm_cut)
+            tt.append(tt_cut)
+            sig.append(sig_cut)
+        except:
+            continue
+
+    cbarr = np.concatenate(cbarr)
+    dm = np.concatenate(dm)
+    sig = np.concatenate(sig)
+    tt = np.concatenate(tt)
+
+    ttref = tt[cbarr==cb_ref]
+    ntrig = len(sig[cbarr==cb_ref])
+    trigger_arr = np.zeros([ntrig, ncb])
+
+    for ii in range(ntrig):
+        tt_trig = ttref[ii]
+        sig_trig = sig[cbarr==cb_ref][ii]
+        for cb in range(ncb):
+            ttcb = tt[cbarr==cb]
+            sigcb = sig[cbarr==cb]
+            ind = np.where(np.abs(tt_trig-ttcb)<0.1)[0]
+            
+            if len(ind)==0:
+                trigger_arr[ii, cb] = 0#np.random.normal(0,1)
+                continue
+
+            sig_ = np.max(sigcb[ind])
+            trigger_arr[ii, cb] = sig_ 
+
+    return trigger_arr
 
 class SNR_Tools:
 
