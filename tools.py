@@ -338,6 +338,8 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
         downsample factor array of brightest trigger in each DM/T window
     beam_cut: ndarray
         beam array of brightest trigger in each DM/T windows (only if read_beam is True)
+    ind_cut : ndarray
+        indexes of events that were kept 
     """
     if tab is not None:
         beam_amber = tab
@@ -568,7 +570,8 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
     plt.show()
 
 def cb_snr(fdir, ncb=40, dm_min=0., 
-           dm_max=np.inf, sig_thresh=6.0, cb_ref=0):
+           dm_max=np.inf, sig_thresh=6.0, cb_ref=0, 
+           t_window=0.1, sb_ref=None, nsb=71):
     """ Get max S/N event across all SBs within a CB, 
     then find triggers at common time 
     across all CBs. 
@@ -587,11 +590,14 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
         minimum S/N to read in during dm/time clustering 
     cb_ref : int 
         will search in this CB for reference pulses 
+    t_window : float 
+        time window in seconds within which a trigger is taken 
+        to be coincident 
 
     Returns
     -------
 
-    Array of S/N (ntrig, ncb) each element is the 
+    Array of S/N (ntrig, ncb, nsb) each element is the 
     S/N of a given CB for a given pulse.
     """
     cbarr, dm, sig, tt = [],[],[],[]
@@ -601,14 +607,23 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     # First read in all triggers, make large array including CB information
     for ii in range(ncb):
         fn = fdir + '/CB%.2d.trigger' % ii
+
         try:
-            sig_cut, dm_cut, tt_cut, ds_cut, ind_full = get_triggers(fn, 
-                                    sig_thresh=sig_thresh, dm_min=dm_min, dm_max=dm_max)
-            cbarr.append(np.ones_like(sig_cut)*ii)
+            if sb_ref is None:
+                sig_cut, dm_cut, tt_cut, ds_cut, ind_full = get_triggers(fn, 
+                                    sig_thresh=sig_thresh, dm_min=dm_min, 
+                                    dm_max=dm_max, read_beam=False)
+                cbarr.append(np.ones_like(sig_cut)*ii)
+            else:
+                sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = get_triggers(fn, 
+                                    sig_thresh=sig_thresh, dm_min=dm_min, 
+                                    dm_max=dm_max, read_beam=True)
+                cbarr.append(nsb*ii + sb_cut)
             dm.append(dm_cut)
             tt.append(tt_cut)
             sig.append(sig_cut)
         except:
+            print('Nope')
             continue
 
     cbarr = np.concatenate(cbarr)
@@ -616,24 +631,36 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     sig = np.concatenate(sig)
     tt = np.concatenate(tt)
 
-    ttref = tt[cbarr==cb_ref]
-    ntrig = len(sig[cbarr==cb_ref])
-    trigger_arr = np.zeros([ntrig, ncb])
+    if sb_ref is None:
+        beam_ref = cb_ref
+        nbeam = ncb
+    else:
+        beam_ref = nsb*cb_ref + sb_ref
+        nbeam = nsb*ncb
+
+    ttref = tt[cbarr==beam_ref]
+    ntrig = len(sig[cbarr==beam_ref])
+    trigger_arr = np.zeros([ntrig, nbeam])
 
     for ii in range(ntrig):
         tt_trig = ttref[ii]
-        sig_trig = sig[cbarr==cb_ref][ii]
-        for cb in range(ncb):
-            ttcb = tt[cbarr==cb]
-            sigcb = sig[cbarr==cb]
-            ind = np.where(np.abs(tt_trig-ttcb)<0.1)[0]
+        sig_trig = sig[cbarr==beam_ref][ii]
+        for beam in range(nbeam):
+            ttcb = tt[cbarr==beam]
+            sigcb = sig[cbarr==beam]
+            ind = np.where(np.abs(tt_trig-ttcb)<t_window)[0]
             
             if len(ind)==0:
-                trigger_arr[ii, cb] = 0#np.random.normal(0,1)
+                trigger_arr[ii, beam] = 0#np.random.normal(0,1)
                 continue
 
             sig_ = np.max(sigcb[ind])
-            trigger_arr[ii, cb] = sig_ 
+            trigger_arr[ii, beam] = sig_ 
+
+    if sb_ref is not None:
+        trigger_arr = trigger_arr.reshape(ntrig, ncb, -1)
+    else:
+        trigger_arr = trigger_arr.reshape(ntrig, ncb, 1)
 
     return trigger_arr
 
