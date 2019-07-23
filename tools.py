@@ -570,8 +570,8 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
     plt.show()
 
 def cb_snr(fdir, ncb=40, dm_min=0., 
-           dm_max=np.inf, sig_thresh=6.0, cb_ref=0, 
-           t_window=0.1, sb_ref=None, nsb=71):
+           dm_max=np.inf, sig_thresh_ref=10.0, cb_ref=0, 
+           t_window=0.1, sb_ref=None, nsb=71, sig_thresh=6.0):
     """ Get max S/N event across all SBs within a CB, 
     then find triggers at common time 
     across all CBs. 
@@ -642,9 +642,19 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     ntrig = len(sig[cbarr==beam_ref])
     trigger_arr = np.zeros([ntrig, nbeam])
 
+    if ntrig==0:
+        print("Found no reference triggers")
+        return []
+
     for ii in range(ntrig):
         tt_trig = ttref[ii]
         sig_trig = sig[cbarr==beam_ref][ii]
+
+        # ensure that reference trigger is brighter than 
+        # sig_thresh_ref
+        if sig_trig < sig_thresh_ref:
+            continue
+
         for beam in range(nbeam):
             ttcb = tt[cbarr==beam]
             sigcb = sig[cbarr==beam]
