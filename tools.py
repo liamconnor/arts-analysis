@@ -686,8 +686,9 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     else:
         trigger_arr = trigger_arr.reshape(ntrig, ncb, 1)
 
-    ind_no_trigger = np.where(trigger_arr.sum(-1).sum(-1)==0)[0]
-    trigger_arr = np.delete(trigger_arr, ind_no_trigger, axis=0)
+#    ind_no_trigger = np.where(trigger_arr.sum(-1).sum(-1)==0)[0]
+#    trigger_arr = np.delete(trigger_arr, ind_no_trigger, axis=0)
+#    print('\nDeleting %d triggers below reference threshold' % len(ind_no_trigger))
 
     return trigger_arr
 
