@@ -569,6 +569,20 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
     plt.suptitle(suptitle_, fontsize=20)
     plt.show()
 
+def beam_mapping():
+    beam_map = np.array([[39,38,37,36,35,34,33], [32,31,30,29,28,27], \
+               [26,25,24,23,22,21], [20,19,18,17,16,15],\
+               [14,13,12,11,10,9,8], [7,6,5,4,3,2,1]])
+
+    beam_map = [39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
+
+    arr = np.zeros([42])
+
+    for ii in range(42):
+        arr[ii] = beam_map
+
+    return beam_map
+
 def cb_snr(fdir, ncb=40, dm_min=0., 
            dm_max=np.inf, sig_thresh_ref=10.0, cb_ref=0, 
            t_window=0.1, sb_ref=None, nsb=71, sig_thresh=6.0):
@@ -671,6 +685,9 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
         trigger_arr = trigger_arr.reshape(ntrig, ncb, -1)
     else:
         trigger_arr = trigger_arr.reshape(ntrig, ncb, 1)
+
+    ind_no_trigger = np.where(trigger_arr.sum(-1).sum(-1)==0)[0]
+    trigger_arr = np.delete(trigger_arr, ind_no_trigger, axis=0)
 
     return trigger_arr
 
