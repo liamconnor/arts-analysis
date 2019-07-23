@@ -301,7 +301,8 @@ def read_singlepulse(fn, max_rows=None, beam=None):
 def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf, 
                  t_window=0.5, max_rows=None, t_max=np.inf,
                  sig_max=np.inf, dt=2*40.96, delta_nu_MHz=300./1536, 
-                 nu_GHz=1.4, fnout=False, tab=None, read_beam=False, dm_width_filter=False):
+                 nu_GHz=1.4, fnout=False, tab=None, read_beam=False, 
+                 dm_width_filter=False):
     """ Get brightest trigger in each 10s chunk.
 
     Parameters
@@ -569,19 +570,24 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
     plt.suptitle(suptitle_, fontsize=20)
     plt.show()
 
-def beam_mapping():
+def beam_mapping(snr_arr):
     beam_map = np.array([[39,38,37,36,35,34,33], [32,31,30,29,28,27], \
                [26,25,24,23,22,21], [20,19,18,17,16,15],\
                [14,13,12,11,10,9,8], [7,6,5,4,3,2,1]])
 
-    beam_map = [39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
+    #beam_map = [39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
 
-    arr = np.zeros([42])
+    ncol = 7
+    nrow = 6
 
-    for ii in range(42):
-        arr[ii] = beam_map
+    arr = np.zeros([nrow, ncol]) - 1
 
-    return beam_map
+    for ii in range(nrow):
+        print(beam_map[ii])
+        for jj in range(len(beam_map[ii])):
+            arr[ii,jj] = snr_arr[beam_map[ii][jj]]
+
+    return arr
 
 def cb_snr(fdir, ncb=40, dm_min=0., 
            dm_max=np.inf, sig_thresh_ref=10.0, cb_ref=0, 
@@ -628,14 +634,18 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
                                     sig_thresh=sig_thresh, dm_min=dm_min, 
                                     dm_max=dm_max, read_beam=False)
                 cbarr.append(np.ones_like(sig_cut)*ii)
+                dm.append(dm_cut)
+                tt.append(tt_cut)
+                sig.append(sig_cut)
             else:
-                sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = get_triggers(fn, 
+                for sb_ in range(nsb):
+                    sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = get_triggers(fn, 
                                     sig_thresh=sig_thresh, dm_min=dm_min, 
-                                    dm_max=dm_max, read_beam=True)
-                cbarr.append(nsb*ii + sb_cut)
-            dm.append(dm_cut)
-            tt.append(tt_cut)
-            sig.append(sig_cut)
+                                    dm_max=dm_max, read_beam=True, tab=sb_)
+                    cbarr.append(nsb*ii + sb_*np.ones_like(sig_cut))
+                    dm.append(dm_cut)
+                    tt.append(tt_cut)
+                    sig.append(sig_cut)
         except:
             print('Nope')
             continue
@@ -1065,7 +1075,8 @@ if __name__=='__main__':
                                         sig_thresh=options.sig_thresh, 
                                         t_window=options.t_window, 
                                         max_rows=None, t_max=options.t_max,
-                                                                                         tab=options.tab, freq_ref_1=options.freq_ref_1, freq_ref_2=options.freq_ref_2)
+                                        tab=options.tab, freq_ref_1=options.freq_ref_1, 
+                                        freq_ref_2=options.freq_ref_2)
         if options.plot_both is True:
             par_1b, par_2b, par_match_arrb, ind_missedb, ind_matchedb = SNRTools.compare_snr(fn_2, fn_1, 
                                         dm_min=options.dm_min, 
@@ -1073,7 +1084,8 @@ if __name__=='__main__':
                                         sig_thresh=options.sig_thresh, 
                                         t_window=options.t_window, 
                                         max_rows=None, t_max=options.t_max, 
-                                                                                             tab=options.tab, freq_ref_1=options.freq_ref_2, freq_ref_2=options.freq_ref_1)                                       
+                                        tab=options.tab, freq_ref_1=options.freq_ref_2, 
+                                        freq_ref_2=options.freq_ref_1)                                       
 
     except TypeError:
         print("No matches, exiting")
