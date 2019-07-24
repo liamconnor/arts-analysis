@@ -592,7 +592,8 @@ def beam_mapping(snr_arr):
 
 def cb_snr(fdir, ncb=40, dm_min=0., 
            dm_max=np.inf, sig_thresh_ref=10.0, cb_ref=0, 
-           t_window=0.1, sb_ref=None, nsb=71, sig_thresh=6.0):
+           t_window=0.1, sb_ref=None, nsb=71, sig_thresh=6.0, 
+           mk_plot=False):
     """ Get max S/N event across all SBs within a CB, 
     then find triggers at common time 
     across all CBs. 
@@ -646,7 +647,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
                 beam_arr = trig_tup[4]
 
                 for sb_ in range(nsb):
-                    print("Clustering SB:%d\n" % sb_)
+                    print("Clustering CB:%d SB:%d\n" % (ii, sb_))
                     sig_cut, dm_cut, tt_cut, ds_cut, ind_full = get_triggers(arr[beam_arr==sb_], 
                                     sig_thresh=sig_thresh, dm_min=dm_min, 
                                     dm_max=dm_max, read_beam=False, tab=sb_)
@@ -707,6 +708,14 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     ind_no_trigger = np.where(trigger_arr.sum(-1).sum(-1)==0)[0]
     trigger_arr = np.delete(trigger_arr, ind_no_trigger, axis=0)
     print('\nDeleting %d triggers below reference threshold' % len(ind_no_trigger))
+
+    if mk_plot:
+        ntrig = len(trigger_arr)
+        for ii in range(ntrig):
+            fnout = './beam_snr_trig%d' % ii 
+            print("\nplotting %d/%d to %s\n" % (ii, ntrig, fnout))
+            plot_beam_snr(trigger_arr[ii].flatten(), 
+                          nrow=6, ncol=7, nsb=71, fn_fig_out=fnout)
 
     return trigger_arr
 

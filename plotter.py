@@ -292,6 +292,54 @@ def plot_comparison(par_1, par_2, par_match_arr,
     plt.show()
     plt.savefig(figname)
 
+def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71, fn_fig_out=None):
+    fig = plt.figure(figsize=(8,8))
+
+    counter = 0
+    beam_map_snr = np.zeros([nrow, ncol, nsb])
+
+    for ii in range(nrow):
+        if ii in [1,2,3]:
+            cols = range(1,ncol)
+        else:
+            cols = range(ncol)
+
+        for jj in cols:
+            for sb in range(nsb):
+                counter +=1 
+                beam_map_snr[ii,jj,sb] = snr_arr[nsb:][-counter]
+
+    beam_map_snr = beam_map_snr.reshape(nrow, -1)
+
+    for xvl in range(ncol+2):
+        axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
+
+    for xhl in range(-1, nrow+1):
+        axhline(xhl+0.5, c='C1', alpha=0.6)
+
+    plt.imshow(beam_map_snr, aspect='auto', cmap='Greys')
+    plt.colorbar()
+    plt.xlim(-1, nsb*ncol+1)
+    axis('off')
+
+    counter = 0
+    for ii in range(nrow):
+        if ii in [1,2,3]:
+            cols = range(1,ncol)
+        else:
+            cols = range(ncol)
+        for jj in cols:
+            counter += 1
+            plt.text(nsb*jj + nsb/3., ii-0.33, "CB%0.2d" % (40 - counter), 
+                color='C0', alpha=0.75)
+
+    plt.tight_layout()
+    if fn_fig_out is not None:
+        plt.savefig(fn_fig_out)
+    plt.show()
+
+
+
 if __name__ == '__main__':
 #     # input hdf5 file
     print('\nExpecting: data_file CB <freq_low> <freq_up>\n')
