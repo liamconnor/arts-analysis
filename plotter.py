@@ -292,7 +292,8 @@ def plot_comparison(par_1, par_2, par_match_arr,
     plt.show()
     plt.savefig(figname)
 
-def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71, fn_fig_out=None):
+def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71, 
+                  fn_fig_out=None, CBs=True):
     fig = plt.figure(figsize=(8,8))
 
     counter = 0
@@ -310,6 +311,9 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71, fn_fig_out=None):
                 beam_map_snr[ii,jj,sb] = snr_arr[nsb:][-counter]
 
     beam_map_snr = beam_map_snr.reshape(nrow, -1)
+    if nsb==1:
+        beam_map_snr = beam_map_snr.repeat(71, axis=1)
+        nsb = 71
 
     for xvl in range(ncol+2):
         axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
@@ -317,7 +321,7 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71, fn_fig_out=None):
     for xhl in range(-1, nrow+1):
         axhline(xhl+0.5, c='C1', alpha=0.6)
 
-    plt.imshow(beam_map_snr, aspect='auto', cmap='Greys')
+    plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)
     plt.colorbar()
     plt.xlim(-1, nsb*ncol+1)
     axis('off')
