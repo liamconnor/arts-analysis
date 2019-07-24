@@ -33,10 +33,10 @@ if __name__=='__main__':
     parser.add_option('--t_window', dest='t_window', type='float',
                         help="", 
                         default=0.1)
-    parser.add_option('--sb_ref', dest='t_window', type=int,
+    parser.add_option('--sb_ref', dest='sb_ref', type=int,
                         help="", 
                         default=35)
-    parser.add_option('--cb_ref', dest='t_window', type=int,
+    parser.add_option('--cb_ref', dest='cb_ref', type=int,
                         help="", 
                         default=0)
 
