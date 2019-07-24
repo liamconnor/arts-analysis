@@ -359,7 +359,7 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
         dm, sig, tt, downsample = fn[:, 0], fn[:, 1], fn[:, 2], fn[:, 3]
     else:
         print("Wrong input type. Expected string or ndarray")
-        if read_beam:a
+        if read_beam:
             return [], [], [], [], [], []
         else:
             return [], [], [], [], []
