@@ -712,7 +712,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
 
             plotter.plot_beam_snr(trigger_arr[ii].flatten(), 
                           nrow=6, ncol=7, nsb=nsb, fn_fig_out=fnout, 
-                          title=plot_title)
+                          plot_title=plot_title)
 
     return trigger_arr
 

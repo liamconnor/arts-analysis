@@ -335,7 +335,7 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
         for jj in cols:
             counter += 1
             plt.text(nsb*jj + nsb/3., ii-0.33, "CB%0.2d" % (40 - counter), 
-                color='C0', alpha=0.75)
+                    color='C0', alpha=0.75)
 
     plt.suptitle(plot_title)
     plt.tight_layout()
