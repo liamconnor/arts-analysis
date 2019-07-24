@@ -708,7 +708,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
             else:
                 nsb=71
 
-            plot_title = 'nSB:%d DM:%0.2f' % (nsb, dms_used[ii])
+            plot_title = 'S/N beam-map    SBs:%d DM:%0.2f' % (nsb, dms_used[ii])
 
             plotter.plot_beam_snr(trigger_arr[ii].flatten(), 
                           nrow=6, ncol=7, nsb=nsb, fn_fig_out=fnout, 

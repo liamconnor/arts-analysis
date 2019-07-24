@@ -363,7 +363,7 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
     beam_map_snr[nrow-1:nrow+1, ncol//2*nsb+nsb//2:ncol//2*nsb+3*nsb//2] = beam0
     plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)#, extent=[0,5,0,6*71])
 
-    plt.suptitle(plot_title)
+    plt.suptitle(plot_title, fontsize=30)
     plt.tight_layout()
     if fn_fig_out is not None:
         plt.savefig(fn_fig_out)
