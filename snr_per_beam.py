@@ -35,7 +35,7 @@ if __name__=='__main__':
                         default=0.1)
     parser.add_option('--sb_ref', dest='sb_ref', type=int,
                         help="", 
-                        default=35)
+                        default=None)
     parser.add_option('--cb_ref', dest='cb_ref', type=int,
                         help="", 
                         default=0)
