@@ -315,6 +315,9 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
         beam_map_snr = beam_map_snr.repeat(71, axis=1)
         nsb = 71
 
+    beam_map_snr = beam_map_snr.repeat(2, axis=0)
+    nrow *= 2
+
     for xvl in range(ncol+2):
         plt.axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
 
@@ -336,6 +339,8 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
             counter += 1
             plt.text(nsb*jj + nsb/3., ii-0.33, "CB%0.2d" % (40 - counter), 
                     color='C0', alpha=0.75)
+
+#    beam_map_snr[]
 
     plt.suptitle(plot_title)
     plt.tight_layout()
