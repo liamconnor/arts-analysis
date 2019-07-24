@@ -614,6 +614,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
 
         try:
             if sb_ref is None:
+                print("Clustering CB:%d" % ii)
                 sig_cut, dm_cut, tt_cut, ds_cut, ind_full = get_triggers(fn, 
                                     sig_thresh=sig_thresh, dm_min=dm_min, 
                                     dm_max=dm_max, read_beam=False)
