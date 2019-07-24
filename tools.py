@@ -359,7 +359,7 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
         dm, sig, tt, downsample = fn[:, 0], fn[:, 1], fn[:, 2], fn[:, 3]
     else:
         print("Wrong input type. Expected string or ndarray")
-        if read_beam:
+        if read_beam:a
             return [], [], [], [], [], []
         else:
             return [], [], [], [], []
@@ -372,6 +372,7 @@ def get_triggers(fn, sig_thresh=5.0, dm_min=0, dm_max=np.inf,
     dm = np.delete(dm, bad_sig_ind)
     downsample = np.delete(downsample, bad_sig_ind)
     sig_cut, dm_cut, tt_cut, ds_cut = [], [], [], []
+
     if read_beam:
         beam = np.delete(beam, bad_sig_ind)
         beam_cut = []
@@ -613,6 +614,9 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     t_window : float 
         time window in seconds within which a trigger is taken 
         to be coincident 
+    sig_thresh_ref : float 
+        minimum S/N to consider for reference triggers. should be 
+        higher than clustering threshold. 
 
     Returns
     -------
@@ -621,8 +625,6 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     S/N of a given CB for a given pulse.
     """
     cbarr, dm, sig, tt = [],[],[],[]
-#    fdir = '/data1/candidates/FRB190709/2019-07-09-06:00:17.B0531+21/'
-#    fdir = '/tank/users/connor/localization/20190707/'
 
     # First read in all triggers, make large array including CB information
     for ii in range(ncb):
@@ -638,10 +640,16 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
                 tt.append(tt_cut)
                 sig.append(sig_cut)
             else:
+                trig_tup = read_singlepulse(fn, beam='all')
+                arr = np.concatenate(trig_tup[:4]).reshape(4, -1)
+                arr = arr.transpose()
+                beam_arr = trig_tup[4]
+
                 for sb_ in range(nsb):
-                    sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = get_triggers(fn, 
+                    print("Clustering SB:%d\n" % sb_)
+                    sig_cut, dm_cut, tt_cut, ds_cut, ind_full = get_triggers(arr[beam_arr==sb_], 
                                     sig_thresh=sig_thresh, dm_min=dm_min, 
-                                    dm_max=dm_max, read_beam=True, tab=sb_)
+                                    dm_max=dm_max, read_beam=False, tab=sb_)
                     cbarr.append(nsb*ii + sb_*np.ones_like(sig_cut))
                     dm.append(dm_cut)
                     tt.append(tt_cut)
@@ -701,6 +709,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     print('\nDeleting %d triggers below reference threshold' % len(ind_no_trigger))
 
     return trigger_arr
+
 
 class SNR_Tools:
 
