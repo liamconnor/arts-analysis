@@ -691,6 +691,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     print('\nDeleting %d triggers below reference threshold' % len(ind_no_trigger))
 
     if mk_plot:
+        import plotter
         ntrig = len(trigger_arr)
         for ii in range(ntrig):
             fnout = './beam_snr_trig%d' % ii 
@@ -698,7 +699,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
 
             if sb_ref is None:
                 nsb=1
-                
+
             plotter.plot_beam_snr(trigger_arr[ii].flatten(), 
                           nrow=6, ncol=7, nsb=71, fn_fig_out=fnout)
 
