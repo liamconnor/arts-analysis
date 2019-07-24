@@ -695,7 +695,11 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
         for ii in range(ntrig):
             fnout = './beam_snr_trig%d' % ii 
             print("\nplotting %d/%d to %s\n" % (ii, ntrig, fnout))
-            plot_beam_snr(trigger_arr[ii].flatten(), 
+
+            if sb_ref is None:
+                nsb=1
+                
+            plotter.plot_beam_snr(trigger_arr[ii].flatten(), 
                           nrow=6, ncol=7, nsb=71, fn_fig_out=fnout)
 
     return trigger_arr
