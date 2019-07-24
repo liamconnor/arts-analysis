@@ -316,15 +316,15 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
         nsb = 71
 
     for xvl in range(ncol+2):
-        axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
+        plt.axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
 
     for xhl in range(-1, nrow+1):
-        axhline(xhl+0.5, c='C1', alpha=0.6)
+        plt.axhline(xhl+0.5, c='C1', alpha=0.6)
 
     plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)
     plt.colorbar()
     plt.xlim(-1, nsb*ncol+1)
-    axis('off')
+    plt.axis('off')
 
     counter = 0
     for ii in range(nrow):
