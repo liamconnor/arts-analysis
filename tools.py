@@ -599,10 +599,11 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     sig_thresh_ref : float 
         minimum S/N to consider for reference triggers. should be 
         higher than clustering threshold. 
+    mk_plot : bool 
+        default False
 
     Returns
     -------
-
     Array of S/N (ntrig, ncb, nsb) each element is the 
     S/N of a given CB for a given pulse.
     """
@@ -654,8 +655,11 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
         nbeam = nsb*ncb
 
     ttref = tt[cbarr==beam_ref]
+    dmref = dm[cbarr==beam_ref]
     ntrig = len(sig[cbarr==beam_ref])
     trigger_arr = np.zeros([ntrig, nbeam])
+
+    dms_used = []
 
     if ntrig==0:
         print("Found no reference triggers")
@@ -679,6 +683,7 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
                 trigger_arr[ii, beam] = 0#np.random.normal(0,1)
                 continue
 
+            dms_used.append(dmref[ii])
             sig_ = np.max(sigcb[ind])
             trigger_arr[ii, beam] = sig_ 
 
@@ -703,8 +708,11 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
             else:
                 nsb=71
 
+            plot_title = 'nSB:%d DM:%0.2f' % (nsb, dms_used[ii])
+
             plotter.plot_beam_snr(trigger_arr[ii].flatten(), 
-                          nrow=6, ncol=7, nsb=nsb, fn_fig_out=fnout)
+                          nrow=6, ncol=7, nsb=nsb, fn_fig_out=fnout, 
+                          title=plot_title)
 
     return trigger_arr
 

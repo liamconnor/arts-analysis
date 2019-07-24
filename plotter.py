@@ -293,7 +293,7 @@ def plot_comparison(par_1, par_2, par_match_arr,
     plt.savefig(figname)
 
 def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71, 
-                  fn_fig_out=None, CBs=True):
+                  fn_fig_out=None, CBs=True, plot_title=''):
     fig = plt.figure(figsize=(8,8))
 
     counter = 0
@@ -337,6 +337,7 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
             plt.text(nsb*jj + nsb/3., ii-0.33, "CB%0.2d" % (40 - counter), 
                 color='C0', alpha=0.75)
 
+    plt.suptitle(plot_title)
     plt.tight_layout()
     if fn_fig_out is not None:
         plt.savefig(fn_fig_out)
