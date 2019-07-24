@@ -14,7 +14,7 @@ if __name__=='__main__':
     parser.add_option('--sig_thresh', dest='sig_thresh', type='float', \
                         help="Only process events above >sig_thresh S/N" \
                                 "(Default: 5.0)", default=5.0)
-    parser.add_option('--sig_thresh_ref', dest='sig_thresh', type='float', \
+    parser.add_option('--sig_thresh_ref', dest='sig_thresh_ref', type='float', \
                         help="Only process events above >sig_thresh S/N" \
                                 "(Default: 5.0)", default=8.0)
     parser.add_option('--save_data', dest='save_data', action='store_true', \
