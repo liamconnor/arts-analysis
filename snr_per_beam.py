@@ -6,10 +6,6 @@ import tools
 
 if __name__=='__main__':
 
-    import sys
-
-    SNRTools = SNR_Tools()
-
     parser = optparse.OptionParser(prog="snr_per_beam.py", \
                         version="", \
                         usage="%prog fndir [OPTIONS]", \
