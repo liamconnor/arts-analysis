@@ -45,11 +45,11 @@ if __name__=='__main__':
 
     options, args = parser.parse_args()
     fdir = args[0]
-
-	snr_arr = tools.cb_snr(fdir, ncb=40, dm_min=options.dm_min, dm_max=options.dm_max, 
-						   sig_thresh_ref=options.sig_thresh_ref, cb_ref=options.cb_ref, 
-	                       t_window=options.t_window, sb_ref=options.sb_ref, nsb=71, 
-	                       sig_thresh=options.sig_thresh, mk_plot=options.mk_plot, 
-	                       )
-	if options.save_data:
-		np.save('%s/snr_data_beams.npy' % fdir, snr_arr)
+    
+    snr_arr = tools.cb_snr(fdir, ncb=40, dm_min=options.dm_min, dm_max=options.dm_max, \
+                           sig_thresh_ref=options.sig_thresh_ref, cb_ref=options.cb_ref, \
+                           t_window=options.t_window, sb_ref=options.sb_ref, nsb=71, \
+                           sig_thresh=options.sig_thresh, mk_plot=options.mk_plot, \
+                           )
+    if options.save_data:
+        np.save('%s/snr_data_beams.npy' % fdir, snr_arr)
