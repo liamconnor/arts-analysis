@@ -311,20 +311,25 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
                 beam_map_snr[ii,jj,sb] = snr_arr[nsb:][-counter]
 
     beam_map_snr = beam_map_snr.reshape(nrow, -1)
+    beam0 = snr_arr[:nsb]
+
     if nsb==1:
         beam_map_snr = beam_map_snr.repeat(71, axis=1)
         nsb = 71
+        beam0 = beam0.repeat(2*71).reshape(2, 71)
+    else:
+        beam0 = beam0.repeat(2).reshape(71,2).transpose()
 
-#    beam_map_snr = beam_map_snr.repeat(2, axis=0)
+    beam_map_snr = beam_map_snr.repeat(2, axis=0)
 #    nrow *= 2
 
     for xvl in range(ncol+2):
         plt.axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
 
     for xhl in range(-1, nrow+1):
-        plt.axhline(xhl+0.5, c='C1', alpha=0.6)
+        plt.axhline(2*xhl+1.5, c='C1', alpha=0.6)
 
-    plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)
+    plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)#, extent=[0,5,0,6*71])
     plt.colorbar()
     plt.xlim(-1, nsb*ncol+1)
     plt.axis('off')
@@ -337,10 +342,11 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
             cols = range(ncol)
         for jj in cols:
             counter += 1
-            plt.text(nsb*jj + nsb/3., ii-0.33, "CB%0.2d" % (40 - counter), 
+            plt.text(nsb*jj + nsb/3., 2*ii-0.1, "CB%0.2d" % (40 - counter), 
                     color='C0', alpha=0.75)
 
-#    beam_map_snr[]
+    beam_map_snr[nrow-1:nrow+1, ncol//2*nsb+nsb//2:ncol//2*nsb+3*nsb//2] = beam0
+    plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)#, extent=[0,5,0,6*71])
 
     plt.suptitle(plot_title)
     plt.tight_layout()
