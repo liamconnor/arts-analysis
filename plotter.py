@@ -315,8 +315,8 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
         beam_map_snr = beam_map_snr.repeat(71, axis=1)
         nsb = 71
 
-    beam_map_snr = beam_map_snr.repeat(2, axis=0)
-    nrow *= 2
+#    beam_map_snr = beam_map_snr.repeat(2, axis=0)
+#    nrow *= 2
 
     for xvl in range(ncol+2):
         plt.axvline(nsb*xvl+0.5, c='C1', alpha=0.6)

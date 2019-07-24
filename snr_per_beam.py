@@ -49,4 +49,4 @@ if __name__=='__main__':
                            sig_thresh=options.sig_thresh, mk_plot=options.mk_plot, \
                            )
     if options.save_data:
-        np.save('%s/snr_data_beams.npy' % fdir, snr_arr)
+        np.save('%s/snr_data_beams_DM%d-%d.npy' % (fdir, options.dm_min, options.dm_max), snr_arr)
