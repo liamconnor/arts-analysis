@@ -699,9 +699,11 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
 
             if sb_ref is None:
                 nsb=1
+            else:
+                nsb=71
 
             plotter.plot_beam_snr(trigger_arr[ii].flatten(), 
-                          nrow=6, ncol=7, nsb=71, fn_fig_out=fnout)
+                          nrow=6, ncol=7, nsb=nsb, fn_fig_out=fnout)
 
     return trigger_arr
 
