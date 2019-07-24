@@ -324,10 +324,22 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
 #    nrow *= 2
 
     for xvl in range(ncol+2):
-        plt.axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
+        if xvl==4:
+            plt.axvline(nsb*xvl, c='C1', alpha=0.6, ymin=0, ymax=2.5/6)
+            plt.axvline(nsb*xvl, c='C1', alpha=0.6, ymin=3.5/6., ymax=1)
+            plt.axvline(nsb*xvl+0.5*nsb, c='C1', alpha=0.6, ymin=2.5/6, ymax=3.5/6)
+            plt.axvline(nsb*xvl-0.5*nsb, c='C1', alpha=0.6, ymin=2.5/6, ymax=3.5/6)
+        else:
+            plt.axvline(nsb*xvl+0.5, c='C1', alpha=0.6)
 
     for xhl in range(-1, nrow+1):
-        plt.axhline(2*xhl+1.5, c='C1', alpha=0.6)
+        if xhl==2:
+            plt.axhline(2*xhl+1.5, c='C1', alpha=0.6, xmin=0, xmax=3.5/7.)
+            plt.axhline(2*xhl+1.5, c='C1', alpha=0.6, xmin=4.5/7., xmax=1.)
+            plt.axhline(2*xhl+0.5, c='C1', alpha=0.6, xmin=3.5/7., xmax=4.5/7.)
+            plt.axhline(2*xhl+2.5, c='C1', alpha=0.6, xmin=3.5/7., xmax=4.5/7.)
+        else:
+            plt.axhline(2*xhl+1.5, c='C1', alpha=0.6)
 
     plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)#, extent=[0,5,0,6*71])
     plt.colorbar()
@@ -345,6 +357,9 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
             plt.text(nsb*jj + nsb/3., 2*ii-0.1, "CB%0.2d" % (40 - counter), 
                     color='C0', alpha=0.75)
 
+    plt.text(nsb*ncol/2. + nsb/4., nrow-1, "CB00",
+                    color='C0', alpha=0.75)
+
     beam_map_snr[nrow-1:nrow+1, ncol//2*nsb+nsb//2:ncol//2*nsb+3*nsb//2] = beam0
     plt.imshow(beam_map_snr, aspect='auto', cmap='Greys', vmin=0.)#, extent=[0,5,0,6*71])
 
@@ -353,7 +368,6 @@ def plot_beam_snr(snr_arr, nrow=6, ncol=7, nsb=71,
     if fn_fig_out is not None:
         plt.savefig(fn_fig_out)
     plt.show()
-
 
 
 if __name__ == '__main__':
