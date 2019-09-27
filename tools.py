@@ -236,6 +236,9 @@ def read_singlepulse(fn, max_rows=None, beam=None):
     elif fn.split('.')[-1] == 'trigger':
         A = np.genfromtxt(fn, max_rows=max_rows)
 
+        if len(A)==0:
+            return [],[],[],[],[]
+
         if len(A.shape) == 1:
             A = A[None]
 
@@ -249,7 +252,7 @@ def read_singlepulse(fn, max_rows=None, beam=None):
                 beamno, dm, sig, tt, downsample = A[:, 0], A[:, -3], A[:, -1], A[:, -5], A[:, 3]
             else:
                 print("Error: DO NOT RECOGNIZE COLUMNS OF .trigger FILE")
-                return 
+                return [],[],[],[],[]
         else:
             # beam batch sample integration_step time DM SNR
             beamno, dm, sig, tt, downsample = A[:, 0], A[:,-2], A[:,-1], A[:, -3], A[:, 3]
@@ -284,7 +287,7 @@ def read_singlepulse(fn, max_rows=None, beam=None):
         dm, sig, tt, downsample = A[:,5], A[:,0], A[:, 2], A[:, 3]
     else:
         print("Didn't recognize singlepulse file")
-        return 
+        return [],[],[],[],[]
 
     if len(A) == 0:
         if beam == 'all':
@@ -574,7 +577,7 @@ def plot_tab_summary(fn, ntab=12, suptitle=''):
 def cb_snr(fdir, ncb=40, dm_min=0., 
            dm_max=np.inf, sig_thresh_ref=10.0, cb_ref=0, 
            t_window=0.1, sb_ref=None, nsb=71, sig_thresh=6.0, 
-           mk_plot=False):
+           mk_plot=False, save_data=False):
     """ Get max S/N event across all SBs within a CB, 
     then find triggers at common time 
     across all CBs. 
@@ -695,6 +698,9 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     ind_no_trigger = np.where(trigger_arr.sum(-1).sum(-1)==0)[0]
     trigger_arr = np.delete(trigger_arr, ind_no_trigger, axis=0)
     print('\nDeleting %d triggers below reference threshold' % len(ind_no_trigger))
+
+    if save_data:
+        np.save('./snr_beam.npy', trigger_arr)
 
     if mk_plot:
         import plotter
