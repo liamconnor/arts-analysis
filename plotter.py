@@ -37,7 +37,7 @@ def plot_two_panel(data_freq_time, params, times=None, cb=None, prob=None,
     # scaling: std = 1, median=0
     extent = [times[0], times[-1], freq_low, freq_up]
 
-    ax2.imshow(data_freq_time, cmap='viridis', vmin=-3, vmax=3, 
+    ax2.imshow(data_freq_time, cmap='viridis', vmin=-1.5, vmax=2.5, 
                interpolation='nearest', aspect='auto', 
                origin='upper', extent=extent)
 

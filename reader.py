@@ -16,18 +16,29 @@ except:
 	pass 
 
 try:
-    import filterbank
+    import filterbank as filterbank_
 except:
     pass
 
+
+
 def write_to_fil(data, header, fn):
-	filterbank.create_filterbank_file(
+	filterbank_.create_filterbank_file(
 		fn, header, spectra=data, mode='readwrite')
 	print("Writing to %s" % fn)
 
+def write_snippet(data, fnout, header_fil=None):
+        """ Take numpy array data (nfreq, ntime)
+        and write to filterbank file fn
+        """
+        if header_fil is None:
+                header_fil = fn
+        header = read_fil_data(header_fil, start=0, stop=1)[-1]
+        write_to_fil(data.transpose(), header, fnout)
+
 def read_fil_data(fn, start=0, stop=1e7):
 	print("Reading filterbank file %s \n" % fn)
-	fil_obj = filterbank.FilterbankFile(fn)
+	fil_obj = filterbank_.FilterbankFile(fn)
 	header = fil_obj.header
         header_size = fil_obj.header_size
         header['hdr'] = header_size
