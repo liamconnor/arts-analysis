@@ -23,8 +23,18 @@ try:
 except:
     dm0 = 0
 
+try:
+    t0_ = np.float(sys.argv[4])
+except:
+    t0_ = 0
+
+print(directory)
+print(outdir)
+print(dm0)
+
 for ii in range(40):
     os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
+    print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
     if dm0>0:
         fn = outdir + 'CB%0.2d.trigger' % ii
 
@@ -36,8 +46,13 @@ for ii in range(40):
         if len(dm)==0:
             continue 
 
-        ind = np.where(np.abs(dm-dm0)<10)[0]
+        if t0_==0:
+            t0 = tt
+        else:
+            t0 = t0_
 
+        ind = np.where((np.abs(dm-dm0)<5) & (np.abs(tt-t0)<5.0))[0]
+        
         if len(ind)>0:
             print(fn)
 
