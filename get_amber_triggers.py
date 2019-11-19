@@ -95,6 +95,18 @@ if __name__=='__main__':
 
         dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
 
+        if options.mk_plot is True:
+            fig = plt.figure()
+            plt.scatter(tt, dm, sig, color='k', alpha=0.35)
+            dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
+            plt.axhline(dm0, color='red', alpha=0.25)
+            for dms in known_dms:
+                plt.axhline(dms, color='green', alpha=0.25, linestyle='--')
+            plt.xlabel('Time [s]', fontsize=16)
+            plt.ylabel('DM', fontsize=16)
+            plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=20)
+            plt.show()
+
         if len(dm)==0:
             print("ntohing")
             continue 
@@ -113,18 +125,6 @@ if __name__=='__main__':
 
         for jj in ind[:100]:
             print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
-
-        if options.mk_plot is True:
-            fig = plt.figure()
-            plt.scatter(tt, dm, sig, color='k', alpha=0.35)
-            dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
-            plt.axhline(dm0, color='red', alpha=0.25)
-            for dms in known_dms:
-                plt.axhline(dms, color='green', alpha=0.25, linestyle='--')
-            plt.xlabel('Time [s]', fontsize=16)
-            plt.ylabel('DM', fontsize=16)
-            plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=20)
-            plt.show()
 
 
 
