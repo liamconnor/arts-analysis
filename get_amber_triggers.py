@@ -13,27 +13,7 @@ import matplotlib.pylab as plt
 
 import tools
 
-#if len(sys.argv) < 2:
-#    print("Expecting, e.g. python get_amber_triggers.py 20190925/2019-09-25-22:50:52.FRB190709 /data1/data/FRBs/FRB190925/amber/ 956.0")
-#    exit()
-
-#directory = sys.argv[1]
-#outdir = sys.argv[2]
-
-try:
-    dm0 = np.float(sys.argv[3])
-except:
-    dm0 = 0
-
-try:
-    t0_ = np.float(sys.argv[4])
-except:
-    t0_ = 0
-
-try: 
-    CBs = [np.int(sys.argv[5])]
-except:
-    CBs = range(40)
+known_dms = [663., 956.7, 465.0, 587.0, 531.0]
 
 if __name__=='__main__':
     def foo_callback(option, opt, value, parser):
