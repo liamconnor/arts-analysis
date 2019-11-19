@@ -39,18 +39,9 @@ if __name__=='__main__':
                         default=np.inf)
     parser.add_option('--mk_plot', dest='mk_plot', action='store_true', \
                         help="make plot if True (default False)", default=False)
-    parser.add_option('--t_max', dest='t_max', type='float',
-                        help="Only process first t_max seconds", 
-                        default=np.inf)
-    parser.add_option('--t_window', dest='t_window', type='float',
+    parser.add_option('--outdir', dest='outdir', type='str',
                         help="", 
-                        default=0.1)
-    parser.add_option('--sb_ref', dest='sb_ref', type=int,
-                        help="", 
-                        default=None)
-    parser.add_option('--cb_ref', dest='cb_ref', type=int,
-                        help="", 
-                        default=0)
+                        default='/tmp/')
     parser.add_option('--CBs',
                   type='string',
                   action='callback',
@@ -61,7 +52,7 @@ if __name__=='__main__':
     options, args = parser.parse_args() 
 
     directory = args[0]
-    outdir = '/tmp/'
+    outdir = options.outdir
     dm_max = options.dm_max
     dm_min = options.dm_min 
     sig_thresh = options.sig_thresh
