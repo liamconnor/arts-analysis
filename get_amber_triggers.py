@@ -47,16 +47,17 @@ if __name__=='__main__':
                                 "(Default: 5.0)", default=5.0)
     parser.add_option('--t0', dest='t0', type='float', \
                         help="Arrival time of pulse", default=0.0)
-    parser.add_option('--save_data', dest='save_data', action='store_true', \
-                        help="save data", default=False)
-    parser.add_option('--mk_plot', dest='mk_plot', action='store_true', \
-                        help="make plot if True (default False)", default=False)
+    parser.add_option('--dm0', dest='dm0', type='float',
+                        help="", 
+                        default=0.0)
     parser.add_option('--dm_min', dest='dm_min', type='float',
                         help="", 
                         default=0.0)
     parser.add_option('--dm_max', dest='dm_max', type='float',
                         help="", 
                         default=np.inf)
+    parser.add_option('--mk_plot', dest='mk_plot', action='store_true', \
+                        help="make plot if True (default False)", default=False)
     parser.add_option('--t_max', dest='t_max', type='float',
                         help="Only process first t_max seconds", 
                         default=np.inf)
@@ -84,15 +85,26 @@ if __name__=='__main__':
     dm_min = options.dm_min 
     sig_thresh = options.sig_thresh
     CBs = range(40)
+    dm0 = options.dm0
+    print(options.CBs)
+    if dm0!=0:
+        dm_min = dm0 - 5.0
+        dm_max = dm0 + 5.0
+    elif np.abs(dm_min-dm_max)>100:
+        print("DM range will produce too many triggers, changing to 0--100")
+        dm_min = 50.
+        dm_max = 150.
 
     print(dm_min, dm_max)
     for ii in CBs:
         os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
         print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
+
         if dm0>0:
             fn = outdir + 'CB%0.2d.trigger' % ii
 
             if not os.path.isfile(fn):
+                print("contining")
                 continue
 
             dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
