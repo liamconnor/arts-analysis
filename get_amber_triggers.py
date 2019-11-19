@@ -28,11 +28,16 @@ try:
 except:
     t0_ = 0
 
+try: 
+    CBs = [np.int(sys.argv[5])]
+except:
+    CBs = range(40)
+
 print(directory)
 print(outdir)
 print(dm0)
 
-for ii in range(40):
+for ii in CBs:
     os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
     print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
     if dm0>0:
@@ -51,11 +56,14 @@ for ii in range(40):
         else:
             t0 = t0_
 
-        ind = np.where((np.abs(dm-dm0)<5) & (np.abs(tt-t0)<5.0))[0]
+#        ind = np.where((np.abs(dm-dm0)<5) & (np.abs(tt-t0)<5.0))[0]
+        ind = np.where((np.abs(dm-dm0)<15.))[0]
         
         if len(ind)>0:
             print(fn)
+        else:
+            print("\nNo corresponding triggers\n")
 
         for jj in ind:
-            print("DM:%0.2f T:%0.2f S/N:%0.2f" % (dm[jj], tt[jj], sig[jj]))
+            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
         print("")
