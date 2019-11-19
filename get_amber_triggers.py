@@ -101,6 +101,7 @@ if __name__=='__main__':
 
     print(dm_min, dm_max)
     for ii in CBs:
+        ii = int(ii)
         os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
         print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
 
