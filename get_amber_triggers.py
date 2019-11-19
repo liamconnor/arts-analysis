@@ -77,8 +77,9 @@ if __name__=='__main__':
 
 
     options, args = parser.parse_args() 
-    fdir = args[0]
 
+    directory = args[0]
+    outdir = '/tmp/'
     dm_max = options.dm_max
     dm_min = options.dm_min 
     sig_thresh = options.sig_thresh
