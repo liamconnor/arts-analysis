@@ -42,6 +42,8 @@ if __name__=='__main__':
     parser.add_option('--outdir', dest='outdir', type='str',
                         help="", 
                         default='/tmp/')
+    parser.add_option('--wf_command', dest='wf_command', action='store_true', \
+                        help="print command line for waterfaller", default=False)
     parser.add_option('--CBs',
                   type='string',
                   action='callback',
@@ -114,9 +116,10 @@ if __name__=='__main__':
         for jj in ind[:100]:
             str_arg1 = (dm[jj], beam[jj], tt[jj], downsample[jj], sig[jj])
             print("DM:%0.2f SB:%d T:%0.2f W:%d S/N:%0.2f" % str_arg1)
-            fnfil = '/data2/output/' + directory + '/filterbank/CB%.2d' % ii
-            str_arg2 = (dm[jj], beam[jj], tt[jj], downsample[jj], fnfil)
-            print("python waterfall_sb.py --dm %0.2f --sb %d --t %0.2f --downsamp %d %s\n" % str_arg2)
+            if options.wf_command:
+                fnfil = '/data2/output/' + directory + '/filterbank/CB%.2d' % ii
+                str_arg2 = (dm[jj], beam[jj], tt[jj], downsample[jj], fnfil)
+                print("python waterfall_sb.py --dm %0.2f --sb %d --t %0.2f --downsamp %d %s\n" % str_arg2)
 
 
 
