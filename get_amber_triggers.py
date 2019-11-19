@@ -136,7 +136,7 @@ if __name__=='__main__':
             fig = plt.figure()
             plt.scatter(tt, dm, sig, color='k', alpha=0.35)
             dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
-            plt.semilogy(basey=2)
+            plt.axhline(dm0, color='red')
             plt.xlabel('Time [s]', fontsize=14)
             plt.ylabel('DM', fontsize=14)
             plt.show()
