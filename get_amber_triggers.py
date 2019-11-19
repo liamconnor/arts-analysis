@@ -106,7 +106,6 @@ if __name__=='__main__':
             else:
                 t0 = t0_
 
-            ind = np.where((np.abs(dm-dm0)<5) & () (np.abs(tt-t0)<5.0))[0]
             ind = np.where((dm<dm_max) & (dm>dm_min) & (np.abs(tt-t0)<5.0) & (sig>sig_thresh))[0]    
             
             if len(ind)>0:
