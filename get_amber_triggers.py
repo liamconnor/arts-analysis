@@ -130,5 +130,17 @@ if __name__=='__main__':
             print("\nNo corresponding triggers\n")
 
         for jj in ind[:100]:
-            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
-        print("")
+            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f\n" % (dm[jj], beam[jj], tt[jj], sig[jj]))
+
+        if options.mk_plot:
+            fig = plt.figure()
+            plt.scatter(tt, dm, sig, color='k', alpha=0.35)
+            plt.xlabel('Time [s]', fontsize=14)
+            plt.ylabel('DM', fontsize=14)
+            plt.show()
+
+
+
+
+
+
