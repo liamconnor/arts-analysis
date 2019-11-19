@@ -139,6 +139,8 @@ if __name__=='__main__':
             plt.scatter(tt, dm, sig, color='k', alpha=0.35)
             dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
             plt.axhline(dm0, color='red', alpha=0.25)
+            for dms in known_dms:
+                plt.axhline(dms, color='green', alpha=0.25, linestyle='--')
             plt.xlabel('Time [s]', fontsize=16)
             plt.ylabel('DM', fontsize=16)
             plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=20)
