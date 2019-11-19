@@ -9,6 +9,7 @@ import sys
 
 import numpy as np
 import optparse
+import matplotlib.pylab as plt
 
 import tools
 
@@ -129,7 +130,7 @@ if __name__=='__main__':
             print("\nNo corresponding triggers\n")
 
         for jj in ind[:100]:
-            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f\n" % (dm[jj], beam[jj], tt[jj], sig[jj]))
+            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
 
         if options.mk_plot is True:
             fig = plt.figure()
