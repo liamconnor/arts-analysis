@@ -135,6 +135,9 @@ if __name__=='__main__':
         if options.mk_plot is True:
             fig = plt.figure()
             plt.scatter(tt, np.log2(dm), sig, color='k', alpha=0.35)
+            dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
+            plt.yticks(dmlab, dmlab)
+            plt.set_yticklabels([])
             plt.xlabel('Time [s]', fontsize=14)
             plt.ylabel('DM', fontsize=14)
             plt.show()
