@@ -12,7 +12,7 @@ if __name__=='__main__':
                         usage="%prog fndir [OPTIONS]", \
                         description="Get SNR for each beam (CB or SB)")
     parser.add_option('--sig_thresh', dest='sig_thresh', type='float', \
-                        help="Only process events above >sig_thresh S/N" \
+                        help="Only process events above > sig_thresh S/N" \
                                 "(Default: 5.0)", default=5.0)
     parser.add_option('--sig_thresh_ref', dest='sig_thresh_ref', type='float', \
                         help="Only process events above >sig_thresh S/N" \
@@ -47,6 +47,6 @@ if __name__=='__main__':
                            sig_thresh_ref=options.sig_thresh_ref, cb_ref=options.cb_ref, \
                            t_window=options.t_window, sb_ref=options.sb_ref, nsb=71, \
                            sig_thresh=options.sig_thresh, mk_plot=options.mk_plot, \
-                           )
+                           save_data=options.save_data)
     if options.save_data:
-        np.save('%s/snr_data_beams_DM%d-%d.npy' % (fdir, options.dm_min, options.dm_max), snr_arr)
+        np.save('./snr_data_beams_DM%d-%d.npy' % (options.dm_min, options.dm_max), snr_arr)
