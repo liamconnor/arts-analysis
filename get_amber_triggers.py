@@ -84,9 +84,13 @@ if __name__=='__main__':
     dm_max = options.dm_max
     dm_min = options.dm_min 
     sig_thresh = options.sig_thresh
-    CBs = range(40)
     dm0 = options.dm0
-    print(options.CBs)
+
+    if options.CBs is None:
+        CBs = range(40)
+    else:
+        CBs = options.CBs
+
     if dm0!=0:
         dm_min = dm0 - 5.0
         dm_max = dm0 + 5.0
@@ -100,31 +104,30 @@ if __name__=='__main__':
         os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
         print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
 
-        if dm0>0:
-            fn = outdir + 'CB%0.2d.trigger' % ii
+        fn = outdir + 'CB%0.2d.trigger' % ii
 
-            if not os.path.isfile(fn):
-                print("contining")
-                continue
+        if not os.path.isfile(fn):
+            print("contining")
+            continue
 
-            dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
+        dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
 
-            if len(dm)==0:
-                print("ntohing")
-                continue 
+        if len(dm)==0:
+            print("ntohing")
+            continue 
 
-            if t0_==0:
-                t0 = tt
-            else:
-                t0 = t0_
+        if t0_==0:
+            t0 = tt
+        else:
+            t0 = t0_
 
-            ind = np.where((dm<dm_max) & (dm>dm_min) & (np.abs(tt-t0)<5.0) & (sig>sig_thresh))[0]    
-            
-            if len(ind)>0:
-                print(fn)
-            else:
-                print("\nNo corresponding triggers\n")
+        ind = np.where((dm<dm_max) & (dm>dm_min) & (np.abs(tt-t0)<5.0) & (sig>sig_thresh))[0]    
+        
+        if len(ind)>0:
+            print(fn)
+        else:
+            print("\nNo corresponding triggers\n")
 
-            for jj in ind:
-                print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
-            print("")
+        for jj in ind:
+            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
+        print("")
