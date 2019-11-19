@@ -85,6 +85,7 @@ if __name__=='__main__':
     sig_thresh = options.sig_thresh
     CBs = range(40)
 
+    print(dm_min, dm_max)
     for ii in CBs:
         os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
         print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
@@ -97,6 +98,7 @@ if __name__=='__main__':
             dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
 
             if len(dm)==0:
+                print("ntohing")
                 continue 
 
             if t0_==0:
