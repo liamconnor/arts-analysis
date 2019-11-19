@@ -99,7 +99,6 @@ if __name__=='__main__':
         dm_min = 50.
         dm_max = 150.
 
-    print(dm_min, dm_max)
     for ii in CBs:
         ii = int(ii)
         os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
@@ -132,7 +131,7 @@ if __name__=='__main__':
         for jj in ind[:100]:
             print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f\n" % (dm[jj], beam[jj], tt[jj], sig[jj]))
 
-        if options.mk_plot:
+        if options.mk_plot is True:
             fig = plt.figure()
             plt.scatter(tt, dm, sig, color='k', alpha=0.35)
             plt.xlabel('Time [s]', fontsize=14)
