@@ -141,7 +141,7 @@ if __name__=='__main__':
             plt.axhline(dm0, color='red', alpha=0.25)
             plt.xlabel('Time [s]', fontsize=16)
             plt.ylabel('DM', fontsize=16)
-            plt.title('%s\nCB%2d' % (fn, ii), fontsize=20)
+            plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=20)
             plt.show()
 
 
