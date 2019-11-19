@@ -116,7 +116,7 @@ if __name__=='__main__':
             print("DM:%0.2f SB:%d T:%0.2f W:%d S/N:%0.2f" % str_arg1)
             fnfil = '/data2/output/' + directory + '/filterbank/CB%.2d' % ii
             str_arg2 = (dm[jj], beam[jj], tt[jj], downsample[jj], fnfil)
-            print("python waterfall_sb.py --dm %0.2f --sb %d --t %0.2f --downsamp %d %s" % str_arg2)
+            print("python waterfall_sb.py --dm %0.2f --sb %d --t %0.2f --downsamp %d %s\n" % str_arg2)
 
 
 
