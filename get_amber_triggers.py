@@ -95,10 +95,12 @@ if __name__=='__main__':
     if dm0!=0:
         dm_min = dm0 - 5.0
         dm_max = dm0 + 5.0
-    elif np.abs(dm_min-dm_max)>100:
+    if np.abs(dm_min-dm_max)>100:
         print("DM range will produce too many triggers, changing to 0--100")
         dm_min = 50.
         dm_max = 150.
+
+    dm0 = 0.5*(dm_min+dm_max)
 
     for ii in CBs:
         ii = int(ii)
@@ -136,7 +138,7 @@ if __name__=='__main__':
             fig = plt.figure()
             plt.scatter(tt, dm, sig, color='k', alpha=0.35)
             dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
-            plt.axhline(dm0, color='red')
+            plt.axhline(dm0, color='red', alpha=0.25)
             plt.xlabel('Time [s]', fontsize=14)
             plt.ylabel('DM', fontsize=14)
             plt.show()
