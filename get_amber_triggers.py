@@ -112,7 +112,11 @@ if __name__=='__main__':
             print("\nNo corresponding triggers\n")
 
         for jj in ind[:100]:
-            print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f W:%d" % (dm[jj], beam[jj], tt[jj], sig[jj], downsample[jj]))
+            str_arg = (dm[jj], beam[jj], tt[jj], downsample[jj], sig[jj])
+            print("DM:%0.2f SB:%d T:%0.2f W:%d S/N:%0.2f" % str_arg)
+            str_arg.append('test.fil')
+            print("python waterfall_sb.py --dm %f --sb %d --t %f --downsamp %d %s" % str_arg)
+
 
 
 
