@@ -129,6 +129,6 @@ if __name__=='__main__':
         else:
             print("\nNo corresponding triggers\n")
 
-        for jj in ind:
+        for jj in ind[:100]:
             print("DM:%0.2f SB:%d T:%0.2f S/N:%0.2f" % (dm[jj], beam[jj], tt[jj], sig[jj]))
         print("")
