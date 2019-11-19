@@ -75,6 +75,10 @@ if __name__=='__main__':
                   callback=foo_callback, 
                   )
 
+
+    options, args = parser.parse_args() 
+    fdir = args[0]
+    
     print(options.CBs)
 
     parser = OptionParser()
