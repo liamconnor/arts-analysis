@@ -104,17 +104,14 @@ if __name__=='__main__':
                 plt.axhline(dms, color='green', alpha=0.25, linestyle='--')
             plt.xlabel('Time [s]', fontsize=16)
             plt.ylabel('DM', fontsize=16)
-            plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=20)
+            plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=15)
             plt.show()
 
         if len(dm)==0:
             print("ntohing")
             continue 
 
-        if t0_==0:
-            t0 = tt
-        else:
-            t0 = t0_
+        t0 = tt
 
         ind = np.where((dm<dm_max) & (dm>dm_min) & (np.abs(tt-t0)<5.0) & (sig>sig_thresh))[0]    
         
