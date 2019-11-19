@@ -11,12 +11,12 @@ import numpy as np
 
 import tools
 
-if len(sys.argv) < 2:
-    print("Expecting, e.g. python get_amber_triggers.py 20190925/2019-09-25-22:50:52.FRB190709 /data1/data/FRBs/FRB190925/amber/ 956.0")
-    exit()
+#if len(sys.argv) < 2:
+#    print("Expecting, e.g. python get_amber_triggers.py 20190925/2019-09-25-22:50:52.FRB190709 /data1/data/FRBs/FRB190925/amber/ 956.0")
+#    exit()
 
-directory = sys.argv[1]
-outdir = sys.argv[2]
+#directory = sys.argv[1]
+#outdir = sys.argv[2]
 
 try:
     dm0 = np.float(sys.argv[3])
@@ -32,10 +32,6 @@ try:
     CBs = [np.int(sys.argv[5])]
 except:
     CBs = range(40)
-
-print(directory)
-print(outdir)
-print(dm0)
 
 if __name__=='__main__':
     def foo_callback(option, opt, value, parser):
