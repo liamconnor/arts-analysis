@@ -78,11 +78,6 @@ if __name__=='__main__':
 
     options, args = parser.parse_args() 
     fdir = args[0]
-    
-    print(options.CBs)
-
-    parser = OptionParser()
-
 
     dm_max = options.dm_max
     dm_min = options.dm_min 
