@@ -13,6 +13,7 @@ import matplotlib.pylab as plt
 
 import tools
 
+# ARTS-discovered FRBs
 known_dms = [663., 956.7, 465.0, 587.0, 531.0]
 
 if __name__=='__main__':
@@ -104,7 +105,10 @@ if __name__=='__main__':
             print("ntohing")
             continue 
 
-        t0 = tt
+        if options.t0==0:
+            t0 = tt 
+        else:
+            t0 = options.t0
 
         ind = np.where((dm<dm_max) & (dm>dm_min) & (np.abs(tt-t0)<5.0) & (sig>sig_thresh))[0]    
         
