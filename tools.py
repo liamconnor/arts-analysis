@@ -728,6 +728,42 @@ class SNR_Tools:
     def __init__(self):
         pass
 
+    def snr_vs_dm(self, data, dm_exp, downsamp_exp, dt=8.192e-5, 
+                  ndms=50, freq=np.linspace(1219.70092773, 1519.50561523, 1536),
+                  mk_plot=False):
+        """ Provide the time/freq data, expected DM, and width and 
+        generate the DM vs. S/N curve for a pulse.
+        """
+        dm_min = dm_exp - downsamp_exp
+        dm_max = dm_exp + downsamp_exp
+        dms = np.linspace(dm_min, dm_max, ndms)
+        widths_snr = range(max(1, int(downsamp_exp/3.0)), min(1000, int(downsamp_exp*3.0)))
+        snrs, width_arr = [],[]
+
+        for dm in dms[:]:
+            last_ind = -int(abs(4.148e3*dm*(freq[0]**-2-freq[-1]**-2)/dt)) 
+            data_ts = dedisperse(data.copy(), dm, freq=freq)
+            data_ts = data_ts[:, :last_ind].mean(0)
+            snr, width = self.calc_snr_matchedfilter(data_ts, widths_snr)
+            snrs.append(snr)
+            width_arr.append(width)
+
+        snrs = np.array(snrs)
+        width_arr = np.array(width_arr)
+        mm = np.argmax(snrs)
+        snr_max = snrs[mm]
+        dm_max = dms[mm]
+        width_max = width_arr[mm]
+
+        if mk_plot:
+            plt.plot(dms, snrs, color='k')
+            plt.plot(dms, width_arr, color='C1')
+            plt.legend(['S/N', 'Boxcar width'])
+            plt.xlabel('DM (pc cm**-3)', fontsize=14)
+            plt.axvline(dm_max)
+
+        return dms, snrs, width_arr, snr_max, dm_max, width_max
+
     def sigma_from_mad(self, data):
         """ Get gaussian std from median 
         aboslute deviation (MAD)
