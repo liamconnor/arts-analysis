@@ -46,13 +46,17 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
                         arr = arr.transpose()
                 if arr.shape[0]!=1536:
                         print("Are you sure you wanted to transpose?")
+
+       	print(arr.shape)
         if RFI_clean==True:
 	        arr = tools.cleandata(arr, clean_type='perchannel')
+
 		arr = tools.dedisperse(arr, dm, freq=freq)[:, :last_ind]
 		nt, nf = arr.shape[-1], arr.shape[0]
 		arr = arr - np.median(arr, axis=-1, keepdims=True)
 		arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
 		arr = arr.reshape(nf//rebin_freq, rebin_freq, nt//rebin_time, rebin_time).mean(1).mean(-1)
+		print(arr.shape)
 		arr_list.append(arr)
 
 	pulse_sample = np.argmax(arr_list[0].mean(0))
