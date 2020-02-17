@@ -8,6 +8,7 @@ nfreq = 1536
 rebin_time = 1
 rebin_freq = 1
 DM = 588.1
+pulse_width = 10 # number of samples to sum over
 
 dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/stokes*sb37.npy'
 dedisp_data_path = '/home/arts/connor/software/arts-analysis/arts-analysis/frb191108/dedispersed_FRB191108.npy'

@@ -142,7 +142,7 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
 
 	return Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P
 
-def plot_raw_data(arr, pulse_sample=None):
+def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 	""" Plot data before calibration
 	"""
 	fig = plt.figure(figsize=(7,7))
@@ -150,14 +150,20 @@ def plot_raw_data(arr, pulse_sample=None):
 	if pulse_sample is None:
 		pulse_sample = np.argmax(arr[0].mean(0))
 	
+	if len(arr.shape)==3:
+		if pulse_width==1:
+			arr_spectra = arr[:, :, pulse_sample]
+		else:
+			arr_spectra = arr[:, :, pulse_sample-pulse_width//2:pulse_sample+pulse_width//2].mean(-1)
+
 	freq_arr = np.linspace(freq[0], freq[-1], arr[0].shape[0])
 	plt.subplot(211)
-	[plt.plot(freq_arr, arr[jj][:, pulse_sample], alpha=0.7, lw=3) for jj in range(4)]
+	[plt.plot(freq_arr, arr_spectra[jj], alpha=0.7, lw=3) for jj in range(4)]
 	plt.legend(['uncal I','uncal Q','uncal U','uncal V'])
 
 	plt.subplot(212)
-	plt.plot(freq_arr, (np.sqrt(arr[3][:, pulse_sample]**2 + arr[1][:, pulse_sample]**2 \
-					+ arr[2][:, pulse_sample]**2)/arr[0][:, pulse_sample]), 
+	plt.plot(freq_arr, (np.sqrt(arr_spectra[3]**2 + arr_spectra[1]**2 \
+					+ arr_spectra[2]**2)/arr_spectra[0]), 
 					color='k', alpha=0.9)
 	plt.ylim(0,1)
 	plt.xlabel('Freq', fontsize=18)
@@ -173,11 +179,11 @@ def plot_im_raw(arr, pulse_sample=None):
 	plt.subplot(221)
 	plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
 	plt.subplot(222)
-	plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+	plt.imshow(arr[1][:, pulse_sample-50:pulse_sample+50], aspect='auto')
 	plt.subplot(223)
-	plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+	plt.imshow(arr[2][:, pulse_sample-50:pulse_sample+50], aspect='auto')
 	plt.subplot(224)
-	plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+	plt.imshow(arr[3][:, pulse_sample-50:pulse_sample+50], aspect='auto')
 	plt.show()
 
 if __name__=='__main__':
