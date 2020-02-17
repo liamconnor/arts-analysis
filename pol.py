@@ -47,9 +47,10 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
                 if arr.shape[0]!=1536:
                         print("Are you sure you wanted to transpose?")
 
-       	print(arr.shape)
-        if RFI_clean==True:
+        if RFI_clean:
 	        arr = tools.cleandata(arr, clean_type='perchannel')
+	    else:
+	    	print("Not RFI cleaning")
 
 		arr = tools.dedisperse(arr, dm, freq=freq)[:, :last_ind]
 		nt, nf = arr.shape[-1], arr.shape[0]
