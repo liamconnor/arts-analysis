@@ -5,10 +5,17 @@ import matplotlib.pylab as plt
 
 import tools
 
-dpath='/tank/users/oostrum/iquv/FRBs/20191108-18:11:00_FRBfield/CB21/stokes*_sb37.npy'
+dpath='/tank/users/oostrum/iquv/FRBs/20191108-18:11:00_FRBfield/CB21/stokes*_tab00.npy'
+dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/SB37*npy'
+dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/stokes*sb37.npy'
+bandpass = np.load('/tank/data/FRBs/FRB191108/iquv/CB21/polcal/bandpass_from_3c286_alpha-0.54.npy')
+#dpath='/data1/output/20191128/2019-11-28-18:00:00.B0329+54/iquv/dada/stokes*_tab00.npy'
+#dpath='./stokes*tab00.npy'
 stokes_ps = ['I', 'Q', 'U', 'V']
-DM = 588.
+DM = 588.125
+RM_guess = 474.0
 
+trans=False
 NFREQ = 1536
 freq = (1219.70092773,1519.50561523)
 freq_arr = np.linspace(freq[0], freq[-1], NFREQ)
@@ -17,7 +24,7 @@ dt = 8.192e-5
 rebin_time=1
 rebin_freq=1
 
-def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1):
+def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True):
 	""" Read in all 4 arrays, dedisperse, 
 	return list with median-subtracted, rebinned 
 	[arr_I, arr_Q, arr_U, arr_V]
@@ -34,8 +41,12 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1):
 	for ii, fn in enumerate(flist):
 		print("Assuming %s is Stokes %s" % (fn, stokes_ps[ii]))
 		arr = np.load(fn)
-		last_ind = -int(abs(4150*DM*(freq[0]**-2-freq[-1]**-2)/dt))
-		arr = tools.dedisperse(arr.transpose(), DM, freq=freq)[:, :last_ind]
+		last_ind = -int(abs(4.148e3*DM*(freq[0]**-2-freq[-1]**-2)/dt))
+                if trans:
+                        arr = arr.transpose()
+                if arr.shape[0]!=1536:
+                        print("Are you sure you wanted to transpose?")
+		arr = tools.dedisperse(arr, dm, freq=freq)[:, :last_ind]
 		nt, nf = arr.shape[-1], arr.shape[0]
 		arr = arr - np.median(arr, axis=-1, keepdims=True)
 		arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
@@ -86,6 +97,7 @@ def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
 	# Assume best fit phase is the one that minimizes 
 	# oscillation in V
 	phi_bf = phis[np.argmin(np.array(phase_std))]
+        print(phi_bf)
 	xy_cal = xy_pulse*np.exp(-1j*phi_bf)
 	Ucal, Vcal = xy_cal.real, xy_cal.imag
 
@@ -96,21 +108,21 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
 	such that flucations in V are minimized. Derotate xy 
 	and return calibrated U/V. 
 	"""
-	arr_Q = arr_Q[:, pulse_sample-100:pulse_sample+100]	
-	arr_U = arr_U[:, pulse_sample-100:pulse_sample+100]
+	if len(arr_Q.shape)==1 and pulse_sample is None:
+		pulse_sample = np.argmax(np.sqrt(arr_Q**2 + arr_U**2).mean(0))
+
+        if len(arr_Q.shape)==1:
+                arr_Q = arr_Q[None]
+                arr_Q = arr_Q[:, pulse_sample-100:pulse_sample+100]	
+        if len(arr_U.shape)==1:
+                arr_U = arr_U[None]
+              	arr_U = arr_U[:, pulse_sample-100:pulse_sample+100]
+
 	arr_Q -= np.median(arr_Q, axis=-1, keepdims=True)
 	arr_U -= np.median(arr_U, axis=-1, keepdims=True)
 
 	P = arr_Q + 1j*arr_U
 	lam_arr = 3e2 / np.linspace(freq[0], freq[-1], P.shape[0])
-
-	if pulse_sample is None:
-		pulse_sample = np.argmax(np.sqrt(arr_Q**2 + arr_U**2).mean(0))
-
-	if pulse_width>1:
-		P_pulse = P[:, 100-pulse_width//2:100+pulse_width//2].mean(-1)
-	else:
-		P_pulse = P[:, 100]
 
 	phis = np.linspace(-2*np.pi, 2*np.pi, 1000)
 	RMs = np.linspace(-RMmax, RMmax, 50000)
@@ -124,6 +136,7 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
 	# Assume best fit phase is the one that minimizes 
 	# oscillation in V
 	rm_bf = RMs[np.argmin(np.array(phase_std))]
+        print("Best fit RM:%0.2f" % rm_bf)
 	P_cal = P_pulse*np.exp(-2j*rm_bf*lam_arr**2)
 	Qcal, Ucal = P_cal.real, P_cal.imag
 
@@ -139,7 +152,7 @@ def plot_raw_data(arr, pulse_sample=None):
 	
 	freq_arr = np.linspace(freq[0], freq[-1], arr[0].shape[0])
 	plt.subplot(211)
-	[plot(freq_arr, arr[jj][:, samp], alpha=0.7, lw=3) for jj in range(4)]
+	[plt.plot(freq_arr, arr[jj][:, pulse_sample], alpha=0.7, lw=3) for jj in range(4)]
 	plt.legend(['uncal I','uncal Q','uncal U','uncal V'])
 
 	plt.subplot(212)
@@ -167,124 +180,77 @@ def plot_im_raw(arr, pulse_sample=None):
 	plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
 	plt.show()
 
+if __name__=='__main__':
+#        arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
+        arr = np.load('dedispersed_data.npy')
+        pulse_sample = np.argmax(arr[0].mean(0))
 
-# phi_bestfit, RMbestfit = -1.2755265051007838, 472.54725472547256
-# phase_xy_bestfit = 2.05
+        bp = np.load('./bandpass_from_3c286_alpha-0.54.npy')
+        xy_phase = np.load('xy_phase_3c286_frequency.npy')
+        xy_phase[200:400] = 2.6
+        xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(freq_arr)
 
-# NFREQ = 1536
-# freq = (1219.70092773,1519.50561523)
-# freq_arr = np.linspace(freq[0], freq[-1], NFREQ)
-# lam_arr = 3e2 / freq_arr
+        mm=200
+        arr = arr[..., pulse_sample-mm:pulse_sample+mm]
+        for ii in range(4):
+#                arr[ii] = arr[ii][:, pulse_sample-mm:pulse_sample+mm]
+                arr[ii] = arr[ii] - arr[ii][:, :150].mean(-1)[:, None]
+                
+        I = arr[0]/bp[:,None]
+        Q = arr[1]/bp[:,None]
+        U = arr[2]/bp[:,None]
+        V = arr[3]/bp[:,None]
 
-# mask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_1370.conf')
+        I_rebin = I[:, mm-2:mm+2].mean(-1).reshape(-1, 16).mean(-1).repeat(16)
+        I /= np.median(I[:, mm-2:mm+2].mean(-1))
 
-# fnI = directory + 'stokesI_sb37.npy'
-# fnQ = directory + 'stokesQ_sb37.npy'
-# fnU = directory + 'stokesU_sb37.npy'
-# fnV = directory + 'stokesV_sb37.npy'
+        xy_data = (U+1j*V)/I_rebin[:, None]
+        xy_data_cal = xy_data * np.exp(-1j*xy_cal)[:, None]
+        Ucal, Vcal = xy_data_cal.real, xy_data_cal.imag
+        Q /= I_rebin[:, None]
 
-# #fnI = '/tank/users/oostrum/iquv/B0531/2019-10-17-04:29:24.B0531+21/stokesI.npy'
-# #fnQ = '/tank/users/oostrum/iquv/B0531/2019-10-17-04:29:24.B0531+21/stokesQ.npy'
-# #fnU = '/tank/users/oostrum/iquv/B0531/2019-10-17-04:29:24.B0531+21/stokesU.npy'
-# #fnV = '/tank/users/oostrum/iquv/B0531/2019-10-17-04:29:24.B0531+21/stokesV.npy'
+        #arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
+        fig = plt.figure(figsize=(7,9))
+        grid = plt.GridSpec(7,3,hspace=0.0,wspace=0.0)
 
-# #fn = '/tank/users/oostrum/iquv/B1404+286/B1404off_'
-# #fnI = fn + 'I.npy'
-# #fnQ = fn + 'Q.npy'
-# #fnU = fn + 'U.npy'
-# #fnV = fn + 'V.npy'
+        tt_arr = np.linspace(0, 2*mm*dt*1e3, 2*mm)
+        plt.subplot(grid[:3, :3])
 
-# I = np.load(fnI)
-# Q = np.load(fnQ)
-# U = np.load(fnU)
-# V = np.load(fnV)
+        P = Q + 1j*Ucal
+        P *= np.exp(-2j*RM_guess*lam_arr**2)[:, None]
 
-# dI = tools.dedisperse(I.transpose(), DM, freq=freq)[:, :-2500]
-# dQ = tools.dedisperse(Q.transpose(), DM, freq=freq)[:, :-2500]
-# dU = tools.dedisperse(U.transpose(), DM, freq=freq)[:, :-2500]
-# dV = tools.dedisperse(V.transpose(), DM, freq=freq)[:, :-2500]
+        plt.plot(tt_arr, I.mean(0)/I.mean(0).max(), color='k', lw=2., alpha=0.7)        
+        plt.plot(tt_arr, np.abs(P.mean(0)), '--', color='red', lw=2., alpha=0.75)
+        plt.plot(tt_arr, np.abs(Vcal).mean(0)-np.abs(Vcal).mean(), '.', color='mediumseagreen', lw=2.)
+        plt.xlim(tt_arr[150], tt_arr[250])
+#        plt.plot(tt_arr, P.mean(0).imag)
+        plt.ylabel('Intensity',labelpad=15, fontsize=13)
+        plt.legend(['I','L','V'], fontsize=11, loc=1)
 
-# dI = dI - np.median(dI, axis=-1, keepdims=True)
-# dQ = dQ - np.median(dQ, axis=-1, keepdims=True)
-# dU = dU - np.median(dU, axis=-1, keepdims=True)
-# dV = dV - np.median(dV, axis=-1, keepdims=True)
+        plt.subplot(grid[4:, :3])
+        plt.plot(freq_arr[1::2], I[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='k',lw=2, alpha=0.7)
+        plt.plot(freq_arr[1::2], Q[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C0', alpha=0.65,lw=2)
+        plt.plot(freq_arr[1::2], Ucal[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C1',lw=2, alpha=0.6)
+        plt.xlabel('Frequency (MHz)', fontsize=13)
+        plt.ylabel('Intensity',labelpad=15, fontsize=13)
+        plt.ylim(-1., 3.1)
+        plt.xlim(1205.0, 1550)
+        plt.legend(['I','Q','U'], framealpha=1.0, fontsize=11, loc=(0.88, 0.6))
+        plt.grid('on', alpha=0.25)
 
-# dI = dI.reshape(1536, -1, 1).mean(-1)
-# dQ = dQ.reshape(1536, -1, 1).mean(-1)
-# dU = dU.reshape(1536, -1, 1).mean(-1)
-# dV = dV.reshape(1536, -1, 1).mean(-1)
+        plt.subplot(grid[3, :3])
+        plt.plot(tt_arr, 180./np.pi*np.angle(P.mean(0)),'.', color='k')
+        plt.xlim(tt_arr[150], tt_arr[250])
+        plt.ylabel('PA (deg)', fontsize=13)
+        plt.xlabel('Time (ms)', labelpad=1, fontsize=13)
 
-# mm = np.argmax(dI.mean(0))
-
-# dI = dI[:, mm-100:mm+100]
-# dQ = dQ[:, mm-100:mm+100]
-# dU = dU[:, mm-100:mm+100]
-# dV = dV[:, mm-100:mm+100]
-
-# xy = dU + 1j*dV
-# xy *= np.exp(-1j*phase_xy_bestfit)
-# dU = xy.real
-# dV = xy.imag
-
-# P = dQ[:,mm] + 1j*dU[:,mm]
-# P = P.reshape(-1, 16).mean(-1)
-
-# thetas = np.linspace(0, 4*np.pi, 1000)
-# RMs = np.linspace(100, 1000, 10000)
-
-# lam_arr = lam_arr[::16]
-# S=[]
-# for rm in RMs:
-#     P_ = P*np.exp(-2j*rm*lam_arr**2)
-#     S.append(np.std(np.angle(P_)))
-
-# S = np.array(S)
-# np.save('Pvec.npy', P)
-# rmbf = RMs[np.argmin(S)]
-# Pcal = P * np.exp(-2j*lam_arr**2*rmbf)
-# phi = np.mean(np.angle(Pcal))
-# print(phi, rmbf)
-# Pcal *= np.exp(-1j*phi)
-# derotate = np.exp(-2j*lam_arr**2*RMbestfit - 1j*phi_bestfit)
-
-# phi_bestfit, RMbestfit = -1.2755265051007838, 472.54725472547256
-# phase_xy_bestfit = 2.05
-
-# plt.plot(lam_arr, Pcal.real)
-# plt.plot(lam_arr, Pcal.imag)
-# plt.show()
-# exit()
-# plt.plot(dU[:,mm])
-# plt.plot(P)
-# plt.plot(P.imag)
-# plt.show()
-# exit()
-
-# plt.subplot(221)
-# plt.imshow(dI[:, mm-50:mm+50], aspect='auto')
-# plt.subplot(222)
-# plt.imshow(dQ[:, mm-50:mm+50], aspect='auto')
-# plt.subplot(223)
-# plt.imshow(dU[:, mm-50:mm+50], aspect='auto')
-# plt.subplot(224)
-# plt.imshow(dV[:, mm-50:mm+50], aspect='auto')
-# plt.show()
-# exit()
-
-
-# std_I = np.std(dI, axis=-1)[:, None]
-# dI /= std_I
-# dQ /= std_I
-# dU /= std_I
-# dV /= std_I
-
-# dI[mask.astype(int)] = 0.0
-# dQ[mask.astype(int)] = 0.0
-# dU[mask.astype(int)] = 0.0
-# dV[mask.astype(int)] = 0.0
-
-# indmax = np.argmax(dI.mean(0))
-
-# #imshow(dI[:, indmax-50:indmax+50], aspect='auto', vmax=3, vmin=-2)
-
-# mu = (I - Q) / (I + Q)
+        plt.tight_layout()
+        plt.savefig('./FRB191108_polarisation.pdf')
+        plt.show()
+        exit()
+#        plot_raw_data(arr)
+#        plot_im_raw(arr)
+        Ucal, Vcal, xy_cal, phi_bf = derotate_UV(arr[2], arr[3], pulse_sample=pulse_sample, pulse_width=1)
+        print(Ucal.shape, arr[1].shape, xy_cal.shape)
+        Ucal = xy_cal.real
+        Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = derotate_faraday(arr[1], Ucal, pulse_sample=pulse_sample, pulse_width=1, RMmin=0.0, RMmax=1e4)
