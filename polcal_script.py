@@ -20,6 +20,7 @@ if generate_iquv_arr:
 if not generate_iquv_arr:
 	try:
 		stokes_arr = np.load(dedisp_data_path)
+		pulse_sample = np.argmax(stokes_arr[0].mean(0))
 	except:
 		print("No dedispersed Stokes array available. Exiting.")
 		exit()
