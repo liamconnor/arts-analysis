@@ -134,7 +134,7 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
 
     phase_std = []
     for rm in RMs:
-        P_rot = P_pulse * np.exp(-2j*rm*lam_arr**2)
+        P_rot = P * np.exp(-2j*rm*lam_arr**2)
         #phase_std.append(np.std(np.angle(P_rot)))
         phase_std.append(P_rot.real.sum())
 
@@ -142,7 +142,7 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
     # oscillation in V
     rm_bf = RMs[np.argmin(np.array(phase_std))]
     print("Best fit RM:%0.2f" % rm_bf)
-    P_cal = P_pulse*np.exp(-2j*rm_bf*lam_arr**2)
+    P_cal = P*np.exp(-2j*rm_bf*lam_arr**2)
     Qcal, Ucal = P_cal.real, P_cal.imag
 
     return Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P
