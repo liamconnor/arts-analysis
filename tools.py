@@ -106,35 +106,6 @@ def dm_transform(data, freq, dt=8.192e-5, dm_max=10, dm_min=-10, ndm=50, freq_re
     return data_full, dms, times
 
 
-def cleandata(data, threshold=3.0):
-    """ Take filterbank object and mask 
-    RFI time samples with average spectrum.
-
-    Parameters:
-    ----------
-    data : np.ndarray
-        (nfreq, ntime) array
-    threshold : float 
-        units of sigma
-
-    Returns:
-    -------
-    cleaned filterbank object
-    """
-    logging.info("Cleaning RFI")
-
-    assert len(data.shape)==2, "Expected (nfreq, ntime) array"
-
-    dtmean = np.mean(data, axis=-1)
-    dfmean = np.mean(data, axis=0)
-    stdevf = np.std(dfmean)
-    medf = np.median(dfmean)
-    maskf = np.where(np.abs(dfmean - medf) > threshold*stdevf)[0]        
-
-    # replace with mean spectrum
-    data[:, maskf] = dtmean[:, None]*np.ones(len(maskf))[None]
-
-    return data
 
 
 def group_dm_time_beam(fdir, fnout=None, trigname='cand'):
@@ -723,6 +694,95 @@ def cb_snr(fdir, ncb=40, dm_min=0.,
     return trigger_arr
 
 
+
+def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
+              n_iter_time=3, n_iter_frequency=3, clean_type='time', wideclean=None):
+    """ Take filterbank object and mask
+    RFI time samples with average spectrum.
+
+    Parameters:
+    ----------
+    data :
+        data array (nfreq, ntime)
+    threshold_time : float
+        units of sigma
+    threshold_frequency : float
+        units of sigma
+    bin_size : int
+        quantization bin size
+    n_iter_time : int
+        Number of iteration for time cleaning
+    n_iter_frequency : int
+        Number of iteration for frequency cleaning
+    clean_type : str
+        type of cleaning to be done.
+        Accepted values: 'time', 'frequency', 'both', 'perchannel'
+
+    Returns:
+    -------
+    cleaned filterbank object
+    """
+    if clean_type not in ['time', 'both', 'frequency', 'perchannel']:
+        return data
+        
+    nfreq = data.shape[0]
+
+    dtmean = np.mean(data, axis=-1)
+    # Clean in time
+    #sys_temperature_bandpass(data.data)
+    #remove_noisy_freq(data.data, 3)
+    #remove_noisy_channels(data.data, sigma_threshold=2, iters=5)
+    if clean_type in ['time', 'both']:
+        for i in range(n_iter_time):
+            dfmean = np.mean(data, axis=0)
+            stdevf = np.std(dfmean)
+            medf = np.median(dfmean)
+            maskf = np.where(np.abs(dfmean - medf) > threshold_time*stdevf)[0]
+            # replace with mean spectrum
+            data[:, maskf] = dtmean[:, None]*np.ones(len(maskf))[None]
+
+    if clean_type=='perchannel':
+        for ii in range(n_iter_time):
+            dtmean = np.mean(data, axis=1, keepdims=True)
+            dtsig = np.std(data, axis=1)
+            for nu in range(data.shape[0]):
+                d = dtmean[nu]
+                sig = dtsig[nu]
+                maskpc = np.where(np.abs(data[nu]-d)>threshold_time*sig)[0]
+                data[nu][maskpc] = d
+
+    # Clean in frequency
+    # remove bandpass by averaging over bin_size ajdacent channels
+    if clean_type in ['frequency', 'both']:
+        for ii in range(n_iter_frequency):
+            dtmean_nobandpass = data.mean(1) - dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)
+            stdevt = np.std(dtmean_nobandpass)
+            medt = np.median(dtmean_nobandpass)
+            maskt = np.abs(dtmean_nobandpass - medt) > threshold_frequency*stdevt
+            data[maskt] = np.median(dtmean)#dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)[maskt]
+
+    if wideclean is not None:
+        for ii in range(2):
+            continue
+            data_rb = data[:, :len(data[0])//wideclean*wideclean].reshape(nfreq, -1, wideclean).mean(-1)
+            dfmean_rb = np.mean(data_rb, axis=0)
+            stdevf_rb = np.std(dfmean_rb)
+            medf_rb = np.median(dfmean_rb)
+            maskf_rb = np.where(np.abs(dfmean_rb - medf_rb) > 1.5*threshold_time*stdevf_rb)[0]
+            # replace with mean spectrum                                                                                                                              
+            maskf_full=[]
+            for zz in maskf_rb:
+                maskf_full.append(range(wideclean*zz, wideclean*(zz+1)))
+
+            if len(maskf_full)>0:
+                maskf_full = np.concatenate(maskf_full)
+                data[:, maskf_full] = dtmean[:, None]*np.ones(len(maskf_full))[None]
+            else:
+                print("No wide DM0 detected")
+
+    return data
+
+
 class SNR_Tools:
 
     def __init__(self):
@@ -733,12 +793,17 @@ class SNR_Tools:
                   mk_plot=False):
         """ Provide the time/freq data, expected DM, and width and 
         generate the DM vs. S/N curve for a pulse.
+        
+        Returns:
+        --------
+        dms, snrs, width_arr, snr_max, dm_max, width_max
         """
         dm_min = dm_exp - downsamp_exp
         dm_max = dm_exp + downsamp_exp
         dms = np.linspace(dm_min, dm_max, ndms)
         widths_snr = range(max(1, int(downsamp_exp/3.0)), min(1000, int(downsamp_exp*3.0)))
         snrs, width_arr = [],[]
+        data -= np.median(data, axis=-1, keepdims=True)
 
         for dm in dms[:]:
             last_ind = -int(abs(4.148e3*dm*(freq[0]**-2-freq[-1]**-2)/dt)) 
@@ -756,12 +821,17 @@ class SNR_Tools:
         width_max = width_arr[mm]
 
         if mk_plot:
+            plt.figure()
             plt.plot(dms, snrs, color='k')
             plt.plot(dms, width_arr, color='C1')
             plt.legend(['S/N', 'Boxcar width'])
             plt.xlabel('DM (pc cm**-3)', fontsize=14)
-            plt.axvline(dm_max)
-
+            plt.axvline(dm_max, color='red', linestyle='--')
+            plt.text(dm_max+1, snr_max*1.05, 'Max S/N~%0.2f'%snr_max)
+            plt.text(dm_max+1, snr_max*1.05-2, 'Max DM~%0.2f'%dm_max)
+            plt.ylim(0, snr_max*1.1)
+            plt.show()
+            
         return dms, snrs, width_arr, snr_max, dm_max, width_max
 
     def sigma_from_mad(self, data):
