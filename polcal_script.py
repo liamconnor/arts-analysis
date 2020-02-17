@@ -3,13 +3,18 @@ from pol import *
 generate_iquv_arr = True
 bandpass_correct = True
 
+nfreq = 1536
+rebin_time = 1
+rebin_freq = 1
+DM = 588.1
+
 dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/stokes*sb37.npy'
-dedisp_data_path = 'dedispersed_data'
+dedisp_data_path = '/home/arts/connor/software/arts-analysis/arts-analysis/frb191108/dedispersed_FRB191108.npy'
 bandpass_path = '/home/arts/connor/software/arts-analysis/arts-analysis/frb191108/bandpass_from_3c286_alpha-0.54_CB22.npy'
 
 if generate_iquv_arr:
-	arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True)
-	stokes_arr = np.concatenate(arr_list)
+	arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=rebin_time, rebin_freq=rebin_freq, dm=DM, trans=True)
+	stokes_arr = np.concatenate(arr_list, axis=0).reshape(4, nfreq, -1)
 	print(stokes_arr.shape)
 
 if not generate_iquv_arr:
