@@ -29,5 +29,5 @@ if bandpass_correct:
 	stokes_arr /= bp_arr[None, :, None]
 
 if mk_plot:
-	plot_im_raw(arr, pulse_sample=pulse_sample)
-	plot_raw_data(arr, pulse_sample=pulse_sample)
+	plot_im_raw(stokes_arr, pulse_sample=pulse_sample)
+	plot_raw_data(stokes_arr, pulse_sample=pulse_sample)
