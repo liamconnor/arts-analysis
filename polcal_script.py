@@ -1,7 +1,8 @@
 from pol import *
 
-generate_iquv_arr = True
+generate_iquv_arr = False
 bandpass_correct = True
+mk_plot = True
 
 nfreq = 1536
 rebin_time = 1
@@ -15,7 +16,6 @@ bandpass_path = '/home/arts/connor/software/arts-analysis/arts-analysis/frb19110
 if generate_iquv_arr:
 	arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=rebin_time, rebin_freq=rebin_freq, dm=DM, trans=True)
 	stokes_arr = np.concatenate(arr_list, axis=0).reshape(4, nfreq, -1)
-	print(stokes_arr.shape)
 
 if not generate_iquv_arr:
 	try:
@@ -27,3 +27,7 @@ if not generate_iquv_arr:
 if bandpass_correct:
 	bp_arr = np.load(bandpass_path)
 	stokes_arr /= bp_arr[None, :, None]
+
+if mk_plot:
+	plot_im_raw(arr, pulse_sample=pulse_sample)
+	plot_raw_data(arr, pulse_sample=pulse_sample)
