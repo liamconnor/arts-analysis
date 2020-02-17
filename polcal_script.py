@@ -5,7 +5,7 @@ bandpass_correct = True
 
 dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/stokes*sb37.npy'
 dedisp_data_path = 'dedispersed_data'
-bandpass_path = './bandpass_from_3c286_alpha-0.54.npy'
+bandpass_path = '/home/arts/connor/software/arts-analysis/arts-analysis/frb191108/bandpass_from_3c286_alpha-0.54_CB22.npy'
 
 if generate_iquv_arr:
 	arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True)
