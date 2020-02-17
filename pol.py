@@ -42,6 +42,7 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
         print("Assuming %s is Stokes %s" % (fn, stokes_ps[ii]))
         arr = np.load(fn)
         last_ind = -int(abs(4.148e3*DM*(freq[0]**-2-freq[-1]**-2)/dt))
+
         if trans:
             arr = arr.transpose()
         if arr.shape[0]!=1536:
@@ -49,15 +50,12 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
 
         if RFI_clean:
             arr = tools.cleandata(arr, clean_type='perchannel')
-        else:
-            print("Not RFI cleaning")
 
         arr = tools.dedisperse(arr, dm, freq=freq)[:, :last_ind]
         nt, nf = arr.shape[-1], arr.shape[0]
         arr = arr - np.median(arr, axis=-1, keepdims=True)
         arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
         arr = arr.reshape(nf//rebin_freq, rebin_freq, nt//rebin_time, rebin_time).mean(1).mean(-1)
-        print(arr.shape)
         arr_list.append(arr)
 
     pulse_sample = np.argmax(arr_list[0].mean(0))

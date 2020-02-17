@@ -10,7 +10,7 @@ mk_plot = True
 nfreq = 1536
 rebin_time = 1
 rebin_freq = 1
-DM = 478.0
+DM = 478.83
 pulse_width = 10 # number of samples to sum over
 transpose = False
 
@@ -31,10 +31,6 @@ if not generate_iquv_arr:
 	except:
 		print("No dedispersed Stokes array available. Exiting.")
 		exit()
-
-if RFI_clean:
-	for ii in range(4):
-		stokes_arr[ii] = tools.clean_type(stokes_arr[ii], clean_type='perchannel')
 
 if bandpass_correct:
 	bp_arr = np.load(bandpass_path)
