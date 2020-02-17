@@ -4,8 +4,9 @@ import pol
 
 generate_iquv_arr = True
 bandpass_correct = True
-RFI_clean = True
+RFI_clean = False
 mk_plot = True
+xy_correct = True
 
 freq_arr = pol.freq_arr
 nfreq = 1536
