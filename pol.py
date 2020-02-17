@@ -42,10 +42,10 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
         print("Assuming %s is Stokes %s" % (fn, stokes_ps[ii]))
         arr = np.load(fn)
         last_ind = -int(abs(4.148e3*DM*(freq[0]**-2-freq[-1]**-2)/dt))
-                if trans:
-                        arr = arr.transpose()
-                if arr.shape[0]!=1536:
-                        print("Are you sure you wanted to transpose?")
+        if trans:
+            arr = arr.transpose()
+        if arr.shape[0]!=1536:
+            print("Are you sure you wanted to transpose?")
 
         if RFI_clean:
             arr = tools.cleandata(arr, clean_type='perchannel')
