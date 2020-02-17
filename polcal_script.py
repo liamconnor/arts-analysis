@@ -1,6 +1,6 @@
 from pol import *
 
-generate_iquv_arr = False
+generate_iquv_arr = True
 bandpass_correct = True
 mk_plot = True
 
