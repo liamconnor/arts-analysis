@@ -75,26 +75,27 @@ def xy_correct(stokes_arr):
 
     return data
 
-if mk_plot and xy_correct:
-    ext = [0, len(data[0,0])*1000/50.*dt*1e3, freq_arr.min(), freq_arr.max()]
-    labels = ['Stokes I', 'Stokes Q', 'Stokes U', 'Stokes V']
-    # Rebin in frequency and time
-    Ispec = Ispec.reshape(-1, 16).mean(1)
-    data = data[..., :data.shape[-1]//pulse_width*pulse_width]
-    data = data.reshape(4, data.shape[1]//16, 16, data.shape[-1]//pulse_width, pulse_width).mean(2).mean(-1)
-    for ii in range(4):
-        plt.subplot(2,2,ii+1)
-        plt.imshow((data[ii]-np.median(data[ii],keepdims=True,axis=1))/Ispec[:,None], 
-                   aspect='auto', extent=ext)
-        plt.text(50, 1480, labels[ii], color='white', fontsize=12)
-        if ii%2==0:
-            plt.ylabel('Freq (MHz)')
-        plt.yticks([1500, 1400, 1300])  
-        if ii>1:
-            plt.xlabel('Time (ms)')
-        plt.xlim(600, 1000)
-    plt.show()
-    exit()
+def plot_xy_corr(data):
+    if mk_plot and xy_correct:
+        ext = [0, len(data[0,0])*1000/50.*dt*1e3, freq_arr.min(), freq_arr.max()]
+        labels = ['Stokes I', 'Stokes Q', 'Stokes U', 'Stokes V']
+        # Rebin in frequency and time
+        Ispec = Ispec.reshape(-1, 16).mean(1)
+        data = data[..., :data.shape[-1]//pulse_width*pulse_width]
+        data = data.reshape(4, data.shape[1]//16, 16, data.shape[-1]//pulse_width, pulse_width).mean(2).mean(-1)
+        for ii in range(4):
+            plt.subplot(2,2,ii+1)
+            plt.imshow((data[ii]-np.median(data[ii],keepdims=True,axis=1))/Ispec[:,None], 
+                       aspect='auto', extent=ext)
+            plt.text(50, 1480, labels[ii], color='white', fontsize=12)
+            if ii%2==0:
+                plt.ylabel('Freq (MHz)')
+            plt.yticks([1500, 1400, 1300])  
+            if ii>1:
+                plt.xlabel('Time (ms)')
+            plt.xlim(600, 1000)
+        plt.show()
+        exit()
 
 def defaraday(data, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
