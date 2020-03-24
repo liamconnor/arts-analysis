@@ -29,23 +29,24 @@ dedisp_data_path = '/tank/data/FRBs/FRB200323/iquv/numpyarr/FRB200323_dedisp.npy
 bandpass_path = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesbandpass_from_3c286_alpha-0.54_CB05.npy'
 xy_phase_cal = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesxy_phase_3c286_frequency.npy'
 
-if generate_iquv_arr:
+def generate_iquv_arr(dpath, dedisp_data_path=None):
     arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=rebin_time, 
                                                rebin_freq=rebin_freq, dm=DM, trans=transpose,
-                                               RFI_clean=RFI_clean)
+                                               RFI_clean=True)
     stokes_arr = np.concatenate(arr_list, axis=0)
     stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
-    np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
+    if dedisp_data_path is not None:
+        np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
 
-if not generate_iquv_arr:
-    try:
-        stokes_arr = np.load(dedisp_data_path)
-        pulse_sample = np.argmax(stokes_arr[0].mean(0))
-    except:
-        print("No dedispersed Stokes array available. Exiting.")
-        exit()
+    return stokes_arr, pulse_sample
 
-if plot_dedisp:
+def read_dedisp_data(dpath):
+    stokes_arr = np.load(dedisp_data_path)
+    pulse_sample = np.argmax(stokes_arr[0].mean(0))
+
+    return stokes_arr, pulse_sample
+
+def plot_dedisp(stokes_arr):
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
@@ -53,11 +54,13 @@ if plot_dedisp:
     plt.axvline(pulse_sample, color='k', linestyle='--', alpha=0.25)
     plt.show()
 
-if bandpass_correct:
+def bandpass_correct(stokes_arr, bandpass_path):
     bp_arr = np.load(bandpass_path)
     stokes_arr /= bp_arr[None, rebin_freq//2::rebin_freq, None]
 
-if xy_correct:
+    return stokes_arr
+
+def xy_correct(stokes_arr):
     # Reverse frequency order
     data = stokes_arr[:, ::-1]
     # Load xy phase cal from 3c286
@@ -65,10 +68,12 @@ if xy_correct:
     xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(freq_arr)
     # Get FRB stokes I spectrum 
     Ispec = data[0,:,pulse_sample-pulse_width//2:pulse_sample+pulse_width//2].mean(-1)
-    I, Q, U, V = data[0,:,:], data[1,:,:], data[2,:,:], data[3,:]
+    I, Q, U, V = data[0], data[1], data[2], data[3]
     xy_data = data[2] + 1j*data[3]
     xy_data *= np.exp(-1j*xy_cal[:, None])
     data[2], data[3] = xy_data.real, xy_data.imag
+
+    return data
 
 if mk_plot and xy_correct:
     ext = [0, len(data[0,0])*1000/50.*dt*1e3, freq_arr.min(), freq_arr.max()]
@@ -91,16 +96,48 @@ if mk_plot and xy_correct:
     plt.show()
     exit()
 
-if defaraday:
-    ii=1;Q = (data[ii]-np.median(data[ii],keepdims=True,axis=1))/Ispec[:,None]
-    ii=2;U = (data[ii]-np.median(data[ii],keepdims=True,axis=1))/Ispec[:,None]
-    ii=3;V = (data[ii]-np.median(data[ii],keepdims=True,axis=1))/Ispec[:,None]
+def defaraday(data, pulse_sample=None, pulse_width=1):
+    if pulse_sample is None:
+        pulse_sample = np.argmax(data[0].mean(0))
+
+    Q = (data[1]-np.median(data[1],keepdims=True,axis=1))/Ispec[:,None]
+    U = (data[2]-np.median(data[2],keepdims=True,axis=1))/Ispec[:,None]
+    V = (data[3]-np.median(data[3],keepdims=True,axis=1))/Ispec[:,None]
     Q = Q[:, pulse_sample//pulse_width]
     U = U[:, pulse_sample//pulse_width]
     Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = pol.derotate_faraday(Q, U, pulse_sample=None, pulse_width=1, RMmin=-1e4, RMmax=1e4)
     plt.plot(np.angle(P_cal))
     plt.show()
 
-if mk_plot:
+def mk_plot(stokes_arr, pulse_sample=None):
+    if pulse_sample is None:
+        pulse_sample = np.argmax(stokes_arr[0].mean(0))
     pol.plot_im_raw(stokes_arr, pulse_sample=pulse_sample)
     pol.plot_raw_data(stokes_arr, pulse_sample=pulse_sample)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Runs polarisation calibration",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-f', '--file', help='name of file(s)', type=str, nargs='+', required=True)
+    parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
+    parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
+    parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
+    parser.add_argument('-xy', '--xy_correct', help='xy calibration path path', default=None, type=str)
+    inputs = parser.parse_args()
+    generate_iquv_arr = False
+
+    if inputs.gen_arr:
+        stokes_arr, pulse_sample = generate_iquv_arr(inputs.file)
+
+    if inputs.plot_dedisp:
+        plot_dedisp(stokes_arr)
+
+    if inputs.bandpass_file is not None:
+        bandpass_correct(stokes_arr, inputs.bandpass_file)
+
+    plot_dedisp = True
+    bandpass_correct = True
+    RFI_clean = True
+    mk_plot = True
+    xy_correct = True
+    defaraday = True
