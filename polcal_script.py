@@ -158,6 +158,12 @@ if __name__ == '__main__':
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
     if inputs.calibrate_frb:
+        try:
+           stokes_arr
+        except NameError:
+           print("Cannot calibrate FRB if there is no stokes array")
+           exit()
+           
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         print("Calibrating bandpass")
         bandpass_correct(stokes_arr, inputs.bandpass_file)
