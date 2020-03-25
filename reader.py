@@ -23,6 +23,10 @@ except:
 
 
 def write_to_fil(data, header, fn):
+        try:
+            del header['rawdatafile']
+        except KeyError:
+            pass
 	filterbank_.create_filterbank_file(
 		fn, header, spectra=data, mode='readwrite')
 	print("Writing to %s" % fn)
