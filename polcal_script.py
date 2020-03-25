@@ -44,9 +44,11 @@ def read_dedisp_data(dpath):
 
     return stokes_arr, pulse_sample
 
-def plot_dedisp(stokes_arr, pulse_width=1):
+def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     #stokes_arr = stokes_arr[..., :len(stokes_arr[-1])//pulse_width*pulse_width]
     #stokes_arr = stokes_arr.reshape(4, -1, stokes_arr.shape[-1]//pulse_width, pulse_width).mean(-1)
+    if pulse_sample is None:
+        pulse_sample = np.argmax(stokes_arr[0].mean(0))
     plt.subplot(211)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
