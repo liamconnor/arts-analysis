@@ -184,7 +184,9 @@ if __name__ == '__main__':
         stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=False)
 
     if inputs.plot_stokes:
-        mk_plot(stokes_arr, pulse_sample=pulse_sample)
+        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
+        mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
+
 
     plot_dedisp = True
     bandpass_correct = True
