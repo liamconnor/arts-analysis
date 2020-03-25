@@ -37,7 +37,7 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     else:
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=rebin_time, 
-                                                   rebin_freq=rebin_freq, dm=DM, trans=transpose,
+                                                   rebin_freq=rebin_freq, dm=DM, trans=False,
                                                    RFI_clean=True)
         stokes_arr = np.concatenate(arr_list, axis=0)
         stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
