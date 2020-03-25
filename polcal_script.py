@@ -156,7 +156,7 @@ if __name__ == '__main__':
     if inputs.plot_dedisp:
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
-    if inputs.calibrate
+    if inputs.calibrate:
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         print("Calibrating bandpass")
         bandpass_correct(stokes_arr, inputs.bandpass_file)
