@@ -213,12 +213,12 @@ def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 
     freq_arr = np.linspace(freq[0], freq[-1], arr[0].shape[0])
     plt.subplot(211)
-    [plt.plot(freq_arr, arr_spectra[jj], '.', alpha=0.7, lw=3) for jj in range(4)]
+    [plt.plot(freq_arr, arr_spectra[jj], alpha=0.7, lw=3) for jj in range(4)]
     plt.legend(['uncal I','uncal Q','uncal U','uncal V'])
 
     plt.subplot(212)
     plt.plot(freq_arr, (np.sqrt(arr_spectra[3]**2 + arr_spectra[1]**2 \
-                    + arr_spectra[2]**2)/arr_spectra[0]), '.', 
+                    + arr_spectra[2]**2)/arr_spectra[0]), 
                     color='k', alpha=0.9)
     plt.ylim(0,2)
     plt.xlabel('Freq', fontsize=18)
