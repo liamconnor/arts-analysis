@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         print("Calibrating bandpass")
-        bandpass_correct(stokes_arr, inputs.bandpass_file)
+        bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation")
 
     plot_dedisp = True
