@@ -132,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--polcal', help='generate iquv array', action='store_true')
     parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
+    parser.add_argument('-c', '--calibrate_frb', help='use non-switch polcal solution to cal FRB', action='store_true')
     parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
     parser.add_argument('-pw', '--pulse_width', help='', default=1, type=int)
     parser.add_argument('-xy', '--xy_correct', help='xy calibration path path', default=None, type=str)
@@ -156,7 +157,7 @@ if __name__ == '__main__':
     if inputs.plot_dedisp:
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
-    if inputs.calibrate:
+    if inputs.calibrate_frb:
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         print("Calibrating bandpass")
         bandpass_correct(stokes_arr, inputs.bandpass_file)
