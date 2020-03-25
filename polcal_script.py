@@ -29,14 +29,19 @@ bandpass_path = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesbandpass
 xy_phase_cal = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesxy_phase_3c286_frequency.npy'
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
-    arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=rebin_time, 
-                                               rebin_freq=rebin_freq, dm=DM, trans=transpose,
-                                               RFI_clean=True)
-    stokes_arr = np.concatenate(arr_list, axis=0)
-    stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
+    if os.path.exists(dedisp_data_path):
+        print("Reading %s in directly" % dedisp_data_path)
+        stokes_arr = np.load(dedisp_data_path)
+        pulse_sample = np.argmax(stokes_arr[0].mean(0))
+    else:
+        arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=rebin_time, 
+                                                   rebin_freq=rebin_freq, dm=DM, trans=transpose,
+                                                   RFI_clean=True)
+        stokes_arr = np.concatenate(arr_list, axis=0)
+        stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
 
-    if type(dedisp_data_path)==str:
-        np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
+        if type(dedisp_data_path)==str:
+            np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
 
     return stokes_arr, pulse_sample
 
