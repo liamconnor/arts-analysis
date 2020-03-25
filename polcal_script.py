@@ -136,6 +136,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--polcal', help='generate iquv array', action='store_true')
     parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
+    parser.add_argument('-ps', '--plot_stokes', help='plot 2D stokes data', action='store_true')
     parser.add_argument('-c', '--calibrate_frb', help='use non-switch polcal solution to cal FRB', action='store_true')
     parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
     parser.add_argument('-pw', '--pulse_width', help='', default=1, type=int)
@@ -181,6 +182,9 @@ if __name__ == '__main__':
         stokes_arr_cal = bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation")
         stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=False)
+
+    if inputs.plot_stokes:
+        mk_plot(stokes_arr, pulse_sample=pulse_sample)
 
     plot_dedisp = True
     bandpass_correct = True
