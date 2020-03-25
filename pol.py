@@ -141,6 +141,8 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     xy = U + 1j*V
 
     bandpass = get_bandpass(I, alpha=alpha_dict[src])
+    plt.plot(bandpass)
+    plt.plot(np.angle(xy))
 
     if save_sol:
         np.save(basedir+'/polcal/bandpass.npy', bandpass)
