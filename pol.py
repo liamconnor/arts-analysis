@@ -213,14 +213,14 @@ def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 
     freq_arr = np.linspace(freq[0], freq[-1], arr[0].shape[0])
     plt.subplot(211)
-    [plt.plot(freq_arr, arr_spectra[jj], alpha=0.7, lw=3) for jj in range(4)]
+    [plt.plot(freq_arr, arr_spectra[jj], '.', alpha=0.7, lw=3) for jj in range(4)]
     plt.legend(['uncal I','uncal Q','uncal U','uncal V'])
 
     plt.subplot(212)
     plt.plot(freq_arr, (np.sqrt(arr_spectra[3]**2 + arr_spectra[1]**2 \
-                    + arr_spectra[2]**2)/arr_spectra[0]), 
+                    + arr_spectra[2]**2)/arr_spectra[0]), '.', 
                     color='k', alpha=0.9)
-    plt.ylim(0,1)
+    plt.ylim(0,2)
     plt.xlabel('Freq', fontsize=18)
     plt.ylabel('Pol fraction [uncal]', fontsize=18)
 
@@ -232,13 +232,17 @@ def plot_im_raw(arr, pulse_sample=None):
 
     fig = plt.figure(figsize=(7,7))
     plt.subplot(221)
+    plt.ylabel('Freq')    
     plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
     plt.subplot(222)
     plt.imshow(arr[1][:, pulse_sample-50:pulse_sample+50], aspect='auto')
     plt.subplot(223)
     plt.imshow(arr[2][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+    plt.xlabel('Time')
+    plt.ylabel('Freq')    
     plt.subplot(224)
     plt.imshow(arr[3][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+    plt.xlabel('Time')
     plt.show()
 
 def solve_muller(Strue, Sobs):
