@@ -97,10 +97,10 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
         if save_sol:
             np.save(fn_spec, stokes_arr_spec)
 
-    I = stokes_arr[0]
-    Q = stokes_arr[1]
-    U = stokes_arr[2]
-    V = stokes_arr[3]
+    I = stokes_arr_spec[0]
+    Q = stokes_arr_spec[1]
+    U = stokes_arr_spec[2]
+    V = stokes_arr_spec[3]
     
     xy = U + 1j*V
 
@@ -110,7 +110,7 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
         np.save(basedir+'/polcal/bandpass.npy', bandpass)
         np.save(basedir+'/polcal/xy_phase.npy', np.angle(xy))
 
-    return stokes_arr, bandpass, np.angle(xy)
+    return stokes_arr_spec, bandpass, np.angle(xy)
 
 def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
     """ Create complex xy spectrum from U/V. Find phase 
