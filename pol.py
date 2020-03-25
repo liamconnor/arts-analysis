@@ -34,7 +34,11 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
     dpath : str 
         data path with .npy IQUV files
     """
-    flist = glob.glob(dpath)
+    if type(dpath)==str:
+        flist = glob.glob(dpath)
+    else:
+        flist = dpath
+
     flist.sort() # should be IQUV ordered now
     arr_list = []
 
@@ -190,6 +194,14 @@ def plot_im_raw(arr, pulse_sample=None):
     plt.subplot(224)
     plt.imshow(arr[3][:, pulse_sample-50:pulse_sample+50], aspect='auto')
     plt.show()
+
+def solve_muller(Strue, Sobs):
+    """ Solve for Mueller matrix using 
+    moore-penrose pseudo inverse"""
+
+    M = np.matmul(Sobs, np.linalg.pinv(Strue))
+    return M
+    
 
 if __name__=='__main__':
 #        arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)

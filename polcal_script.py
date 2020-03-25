@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pylab as plt
 import argparse 
+import glob
 
 import pol
 
@@ -30,13 +31,13 @@ dedisp_data_path = '/tank/data/FRBs/FRB200323/iquv/numpyarr/FRB200323_dedisp.npy
 bandpass_path = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesbandpass_from_3c286_alpha-0.54_CB05.npy'
 xy_phase_cal = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesxy_phase_3c286_frequency.npy'
 
-def generate_iquv_arr(dpath, dedisp_data_path=None):
+def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
     arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=rebin_time, 
                                                rebin_freq=rebin_freq, dm=DM, trans=transpose,
                                                RFI_clean=True)
     stokes_arr = np.concatenate(arr_list, axis=0)
     stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
-    if dedisp_data_path is not None:
+    if type(dedisp_data_path)==str:
         np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
 
     return stokes_arr, pulse_sample
@@ -47,7 +48,9 @@ def read_dedisp_data(dpath):
 
     return stokes_arr, pulse_sample
 
-def plot_dedisp(stokes_arr):
+def plot_dedisp(stokes_arr, pulse_width=1):
+    stokes_arr = stokes_arr[..., :len(stokes_arr[-1])//pulse_width*pulse_width]
+    stokes_arr = stokes_arr.reshape(4, -1, stokes_arr.shape[-1]//pulse_width, pulse_width).mean(-1)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
@@ -124,15 +127,21 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
     parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
+    parser.add_argument('-pw', '--pulse_width', help='', default=1, type=int)
     parser.add_argument('-xy', '--xy_correct', help='xy calibration path path', default=None, type=str)
     inputs = parser.parse_args()
-    generate_iquv_arr = False
+
+    params = glob.glob('/tank/data/FRBs/FRB200322/iquv/numpyarr/DM*txt')[0]
+    DM = float(params.split('DM')[-1].split('_')[0])
 
     if inputs.gen_arr:
-        stokes_arr, pulse_sample = generate_iquv_arr(inputs.file)
+        print("Assuming %0.2f" % DM)
+        dedisp_data_path='/tank/data/FRBs/FRB200322/iquv/numpyarr/FRB200322_dedisp.npy'
+        dedisp_data_path='/tank/data/FRBs/R3/20200322/iquv/numpyarr/FRB_R3_dedisp.npy'
+        stokes_arr, pulse_sample = generate_iquv_arr(inputs.file, dedisp_data_path=dedisp_data_path, DM=DM)
 
     if inputs.plot_dedisp:
-        plot_dedisp(stokes_arr)
+        plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
     if inputs.bandpass_file is not None:
         bandpass_correct(stokes_arr, inputs.bandpass_file)
