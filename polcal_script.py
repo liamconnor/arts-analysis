@@ -47,10 +47,17 @@ def read_dedisp_data(dpath):
 def plot_dedisp(stokes_arr, pulse_width=1):
     #stokes_arr = stokes_arr[..., :len(stokes_arr[-1])//pulse_width*pulse_width]
     #stokes_arr = stokes_arr.reshape(4, -1, stokes_arr.shape[-1]//pulse_width, pulse_width).mean(-1)
+    plt.subplot(211)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
     plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
+    plt.subplot(212)
+    plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
+    plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
+    plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
+    plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
+    plt.xlim(pulse_sample-250, pulse_sample+250)
 #    plt.axvline(pulse_sample, color='k', linestyle='--', alpha=0.25)
     plt.show()
 
@@ -152,7 +159,8 @@ if __name__ == '__main__':
         except NameError:
            print("Cannot plot data if there is no stokes array")
            exit()
-        plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
+        plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
+                    pulse_width=inputs.pulse_width)
 
     if inputs.calibrate_frb:
         try:
