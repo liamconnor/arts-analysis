@@ -27,6 +27,8 @@ dt = 8.192e-5
 rebin_time=1
 rebin_freq=1
 
+stokes_list = ['I', 'Q', 'U', 'V']
+
 def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_clean=False):
     """ Read in all 4 arrays, dedisperse, 
     return list with median-subtracted, rebinned 
@@ -99,9 +101,9 @@ def sb_from_npy(folder, sb=35, off_src=False):
             data = np.load(fn)
             data_full[tab] = data
         if off_src:
-            fnout = 'stokes{}_sb{:02d}_off'.format(stokes, sb)
+            fnout = 'stokes{}_sb_off'.format(stokes, sb)
         else:
-            fnout = 'stokes{}_sb{:02d}'.format(stokes, sb)
+            fnout = 'stokes{}_sb_on'.format(stokes, sb)
         # get sb                                                                                         
         sbdata = sbgen.synthesize_beam(data_full, sb)
         np.save(folder+fnout, sbdata[:])
@@ -116,14 +118,18 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     if os.path.exists(fn_spec):
         stokes_arr_spec = np.load(fn_spec)
     else:
-        dpath = basedir+'/polcal/stokes*sb*npy'
-        arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
-                                                   rebin_freq=1, dm=0, trans=False,
-                                                   RFI_clean=True)
-        stokes_arr = np.concatenate(arr_list, axis=0)
-        stokes_arr = stokes_arr.reshape(4, NFREQ, -1)
-        stokes_arr_spec = stokes_arr.mean(-1)
-    
+        stokes_arr_spec = np.zeros([4, NFREQ])
+        for ii, ss in enumerate(stokes_list):
+            don = np.load(basedir+'/polcal/stokes%s_sb_on.npy' % ss)
+            doff = np.load(basedir+'/polcal/stokes%s_sb_off.npy' % ss)
+        # arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
+        #                                            rebin_freq=1, dm=0, trans=False,
+        #                                            RFI_clean=True)
+        # stokes_arr = np.concatenate(arr_list, axis=0)
+        # stokes_arr = stokes_arr.reshape(4, NFREQ, -1)
+        # stokes_arr_spec = stokes_arr.mean(-1)
+            stokes_arr_spec[ii] = don.mean(-1)-doff.mean(-1)
+
         if save_sol:
             np.save(fn_spec, stokes_arr_spec)
 
