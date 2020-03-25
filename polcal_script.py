@@ -18,7 +18,7 @@ nfreq = 1536
 rebin_time = 1
 rebin_freq = 1
 dt = 8.192e-5
-pulse_width = 25 # number of samples to sum over
+pulse_width = 1 # number of samples to sum over
 transpose = False
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
@@ -51,7 +51,7 @@ def plot_dedisp(stokes_arr, pulse_width=1):
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
     plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
-    plt.axvline(pulse_sample, color='k', linestyle='--', alpha=0.25)
+#    plt.axvline(pulse_sample, color='k', linestyle='--', alpha=0.25)
     plt.show()
 
 def bandpass_correct(stokes_arr, bandpass_path):
@@ -147,6 +147,11 @@ if __name__ == '__main__':
                                     dedisp_data_path=dedisp_data_path, DM=DM)
 
     if inputs.plot_dedisp:
+        try:
+           stokes_arr
+        except NameError:
+           print("Cannot plot data if there is no stokes array")
+           exit()
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
     if inputs.calibrate_frb:
