@@ -119,7 +119,7 @@ def remove_noisy_channels(data, sigma_threshold=2, iters=10):
 
 
 def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
-              n_iter_time=3, n_iter_frequency=3, clean_type='time'):
+              n_iter_time=3, n_iter_frequency=3, clean_type='time', wideclean=None):
     """ Take filterbank object and mask
     RFI time samples with average spectrum.
 
@@ -150,6 +150,7 @@ def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
         return data
         
     logging.info("Cleaning RFI")
+    nfreq = data.shape[0]
 
     dtmean = np.mean(data, axis=-1)
     # Clean in time
@@ -184,6 +185,25 @@ def cleandata(data, threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
             medt = np.median(dtmean_nobandpass)
             maskt = np.abs(dtmean_nobandpass - medt) > threshold_frequency*stdevt
             data[maskt] = np.median(dtmean)#dtmean.reshape(-1, bin_size).mean(-1).repeat(bin_size)[maskt]
+
+    if wideclean is not None:
+        for ii in range(2):
+            continue
+            data_rb = data[:, :len(data[0])//wideclean*wideclean].reshape(nfreq, -1, wideclean).mean(-1)
+            dfmean_rb = np.mean(data_rb, axis=0)
+            stdevf_rb = np.std(dfmean_rb)
+            medf_rb = np.median(dfmean_rb)
+            maskf_rb = np.where(np.abs(dfmean_rb - medf_rb) > 1.5*threshold_time*stdevf_rb)[0]
+            # replace with mean spectrum                                                                                                                              
+            maskf_full=[]
+            for zz in maskf_rb:
+                maskf_full.append(range(wideclean*zz, wideclean*(zz+1)))
+
+            if len(maskf_full)>0:
+                maskf_full = np.concatenate(maskf_full)
+                data[:, maskf_full] = dtmean[:, None]*np.ones(len(maskf_full))[None]
+            else:
+                print("No wide DM0 detected")
 
     return data
 
@@ -256,6 +276,11 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     SNRtools = tools.SNR_Tools()
     downsamp = min(4096, downsamp)
+
+    if downsamp >= 100:
+        wideclean = int(downsamp)
+    else:
+        wideclean = None
 
     # store path to filterbanks
     if sb is not None:
@@ -358,7 +383,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     if rficlean is True:
         data.data = cleandata(data.data, threshold_time, threshold_frequency, bin_size, \
-                         n_iter_time, n_iter_frequency, clean_type)
+                              n_iter_time, n_iter_frequency, clean_type, wideclean=wideclean)
 
     if subtract_zerodm:
         data.data -= np.mean(data.data, axis=0, keepdims=True)
@@ -405,26 +430,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                                                        dm_max=dm_max_trans, dm_min=dm_min_trans, freq_ref=freq_ref,ndm=ndm, dm0=dm_center)
         dms += dm0
 
-        for jj, dm_ in enumerate(dms):
-            continue
-            data_copy = copy.deepcopy(data)
-
-            t0_dm = time.time()
-            data_copy.dedisperse(dm_)
-            dm_arr = data_copy.data[:, max(0, t_min):t_max].mean(0)
-
-            full_arr[jj, np.abs(min(0, t_min)):] = copy.copy(dm_arr)
-
-            logging.info("Dedispersing to dm=%0.1f at t=%0.1fsec with width=%.1f S/N=%.1f" %
-                         (dm_, t0, downsamp, sig_cut))
-
-            if jj==dm_max_jj:
-                data_dm_max = data_copy.data[:, max(0, t_min):t_max]
-                snr_max = SNRtools.calc_snr_matchedfilter(data_dm_max.mean(0), widths=[downsamp_res])[0]
-                if t_min<0:
-                    Z = np.zeros([nfreq, np.abs(t_min)])
-                    data_dm_max = np.concatenate([Z, data_dm_max], axis=1)
-
     # bin down to nfreq_plot freq channels
     full_freq_arr_downsamp = data_dm_max[:nfreq//nfreq_plot*nfreq_plot, :].reshape(\
                                    nfreq_plot, -1, ntime).mean(1)
@@ -450,7 +455,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     suptitle = " CB:%s  S/N$_{pipe}$:%.1f  S/N$_{presto}$:%.1f\
                  S/N$_{compare}$:%.1f \nDM:%d  t:%.1fs  width:%d" %\
                  (beamno, sig_cut, snr_max, snr_comparison,
-                    dms[dm_max_jj], t0, downsamp)
+                    dm0, t0, downsamp)
 
     if not os.path.isdir('%s/plots' % outdir):
         os.system('mkdir -p %s/plots' % outdir)
@@ -461,7 +466,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         sbname = sb
 
     fn_fig_out = '%s/plots/CB%s_snr%d_dm%d_t0%d_sb%d.pdf' % \
-                     (outdir, beamno, sig_cut, dms[dm_max_jj], t0, sbname)
+                     (outdir, beamno, sig_cut, dm0, t0, sbname)
 
     params = sig_cut, dms[dm_max_jj], downsamp, t0, dt
     tmed = np.median(full_freq_arr_downsamp, axis=-1, keepdims=True)
@@ -569,7 +574,7 @@ if __name__=='__main__':
                       help="save each trigger's data. 0=don't save. \
                       hdf5 = save to hdf5. npy=save to npy. concat to \
                       save all triggers into one file",
-                      default='hdf5')
+                      default='concat')
 
     parser.add_option('--ntrig', dest='ntrig', type='int',
                       help="Only process this many triggers",
