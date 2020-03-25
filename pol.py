@@ -104,7 +104,7 @@ def sb_from_npy(folder, sb=35, off_src=False):
             fnout = 'stokes{}_sb{:02d}'.format(stokes, sb)
         # get sb                                                                                         
         sbdata = sbgen.synthesize_beam(data_full, sb)
-        np.save(fnout, sbdata[:])
+        np.save(folder+fnout, sbdata[:])
 
 def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     """ This function should get both bandpass calibration and 
