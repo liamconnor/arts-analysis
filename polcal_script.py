@@ -135,6 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--basedir', help='base directory of polarisation data', type=str, required=True)
     parser.add_argument('-p', '--polcal', help='generate iquv array', action='store_true')
     parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
+    parser.add_argument('-sb', '--gen_sb', help='generate SB from npy files', action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
     parser.add_argument('-ps', '--plot_stokes', help='plot 2D stokes data', action='store_true')
     parser.add_argument('-c', '--calibrate_frb', help='use non-switch polcal solution to cal FRB', action='store_true')
@@ -147,6 +148,12 @@ if __name__ == '__main__':
     obs_name = inputs.basedir.split('/')[4]
     params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
     DM = float(params.split('DM')[-1].split('_')[0])
+
+    if inputs.gen_sb:
+        print("Generating SB from npy data")
+        folder = inputs.basedir+'/polcal/'
+        pol.sb_from_npy(folder, sb=35, off_src=False)
+        pol.sb_from_npy(folder, sb=35, off_src=True)
 
     if inputs.polcal:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)

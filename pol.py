@@ -5,6 +5,7 @@ import matplotlib.pylab as plt
 import glob 
 import matplotlib.pylab as plt
 
+from darc.sb_generator import SBGenerator
 import tools
 
 dpath='/tank/users/oostrum/iquv/FRBs/20191108-18:11:00_FRBfield/CB21/stokes*_tab00.npy'
@@ -76,6 +77,35 @@ def get_bandpass(stokes_I, alpha=0.51, freq=(1219.70092773,1519.50561523)):
     bandpass = stokes_I*(freq_arr/1370.0)**alpha
     return bandpass
 
+def sb_from_npy(folder, sb=35, off_src=False):
+    # get sb map                                                                                         
+    sbgen = SBGenerator.from_science_case(4)
+    sbmap = sbgen.get_map(sb)
+
+    # read first file to get shape                                                                       
+    shape = np.load('{}/stokesI_tab00.npy'.format(folder)).shape
+
+    # init full array                                                                                    
+    data_full = np.zeros((12, shape[0], shape[1]))
+
+    for stokes in 'IQUV':
+        print("Processing stokes {}".format(stokes))
+        for tab in set(sbmap):
+            print("Loading TAB{:02d}".format(tab))
+            if off_src:
+                fn = '{}/stokes{}_tab{:02d}_off.npy'.format(folder, stokes, tab)
+            else:
+                fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
+            data = np.load(fn)
+            data_full[tab] = data
+        if off_src:
+            fnout = 'stokes{}_sb{:02d}_off'.format(stokes, sb)
+        else:
+            fnout = 'stokes{}_sb{:02d}'.format(stokes, sb)
+        # get sb                                                                                         
+        sbdata = sbgen.synthesize_beam(data_full, sb)
+        np.save(fnout, sbdata[:])
+
 def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     """ This function should get both bandpass calibration and 
     a polarisation calibration from some point source (usually 3C286)
@@ -101,7 +131,7 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     Q = stokes_arr_spec[1]
     U = stokes_arr_spec[2]
     V = stokes_arr_spec[3]
-    
+
     xy = U + 1j*V
 
     bandpass = get_bandpass(I, alpha=alpha_dict[src])
