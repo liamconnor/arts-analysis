@@ -49,18 +49,22 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     #stokes_arr = stokes_arr.reshape(4, -1, stokes_arr.shape[-1]//pulse_width, pulse_width).mean(-1)
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
+    
+    pulse_sample /= pulse_width
+
     plt.subplot(211)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
     plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
+    plt.legend(['I', 'Q', 'U', 'V'])
     plt.subplot(212)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
     plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
-    plt.xlim(pulse_sample-250, pulse_sample+250)
-#    plt.axvline(pulse_sample, color='k', linestyle='--', alpha=0.25)
+    plt.xlim(pulse_sample-100, pulse_sample+100)
+    plt.xlabel('Sample number', fontsize=15)
     plt.show()
 
 def bandpass_correct(stokes_arr, bandpass_path):
