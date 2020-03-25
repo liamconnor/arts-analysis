@@ -34,6 +34,7 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
                                                RFI_clean=True)
     stokes_arr = np.concatenate(arr_list, axis=0)
     stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
+
     if type(dedisp_data_path)==str:
         np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
 
@@ -139,17 +140,16 @@ if __name__ == '__main__':
                                                                       src=inputs.src, save_sol=True)
 
     if inputs.gen_arr:
-        print("Assuming %0.2f" % DM)
+        print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
         dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
         stokes_arr, pulse_sample = generate_iquv_arr(dpath, dedisp_data_path=dedisp_data_path, DM=DM)
-
-    exit()
 
     if inputs.plot_dedisp:
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
     if inputs.bandpass_file is not None:
+        fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         bandpass_correct(stokes_arr, inputs.bandpass_file)
 
     plot_dedisp = True
