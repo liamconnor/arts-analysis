@@ -69,20 +69,20 @@ def bandpass_correct(stokes_arr, bandpass_path):
 
     return stokes_arr
 
-def xy_correct(stokes_arr):
-    # Reverse frequency order
-    data = stokes_arr[:, ::-1]
+def xy_correct(stokes_arr, fn_xy_phase, plot=False):
+    stokes_arr_cal = np.zeros_like(stokes_arr)
     # Load xy phase cal from 3c286
-    xy_phase = np.load(xy_phase_cal)
-    xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(freq_arr)
+    xy_phase = np.load(fn_xy_phase)
+    xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(pol.freq_arr)
     # Get FRB stokes I spectrum 
-    Ispec = data[0,:,pulse_sample-pulse_width//2:pulse_sample+pulse_width//2].mean(-1)
-    I, Q, U, V = data[0], data[1], data[2], data[3]
-    xy_data = data[2] + 1j*data[3]
+    I, Q, U, V = stokes_arr[0], stokes_arr[1], stokes_arr[2], stokes_arr[3]
+    xy_data = U + 1j*V
     xy_data *= np.exp(-1j*xy_cal[:, None])
-    data[2], data[3] = xy_data.real, xy_data.imag
+    stokes_arr_cal[2], stokes_arr_cal[3] = xy_data.real, xy_data.imag
+    stokes_arr_cal[0] = stokes_arr[0]
+    stokes_arr_cal[1] = stokes_arr[1]
 
-    return data
+    return stokes_arr_cal
 
 def plot_xy_corr(data):
     if mk_plot and xy_correct:
@@ -143,6 +143,7 @@ if __name__ == '__main__':
     DM = float(params.split('DM')[-1].split('_')[0])
 
     if inputs.polcal:
+        print("Getting bandpass and xy pol solution from %s" % inputs.src)
         stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(inputs.basedir, 
                                                                       src=inputs.src, save_sol=True)
 
@@ -155,9 +156,11 @@ if __name__ == '__main__':
     if inputs.plot_dedisp:
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
 
-    if inputs.bandpass_file is not None:
+    if inputs.calibrate
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
+        print("Calibrating bandpass")
         bandpass_correct(stokes_arr, inputs.bandpass_file)
+        print("Calibrating xy correlation")
 
     plot_dedisp = True
     bandpass_correct = True
