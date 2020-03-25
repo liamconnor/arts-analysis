@@ -7,8 +7,6 @@ import glob
 
 import pol
 
-generate_iquv_arr = False
-plot_dedisp = True
 bandpass_correct = True
 RFI_clean = True
 mk_plot = True
@@ -22,13 +20,6 @@ rebin_freq = 1
 dt = 8.192e-5
 pulse_width = 25 # number of samples to sum over
 transpose = False
-
-dpath = '/tank/data/FRBs/FRB200322/iquv/numpyarr/stokes*sb29*.npy'
-dpath = '/tank/data/FRBs/R3/20200322/iquv/numpyarr/stokes*sb35*.npy'
-dpath = '/tank/data/FRBs/FRB200323/iquv/numpyarr/stokes*sb18*.npy'
-dedisp_data_path = '/tank/data/FRBs/FRB200323/iquv/numpyarr/FRB200323_dedisp.npy'
-bandpass_path = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesbandpass_from_3c286_alpha-0.54_CB05.npy'
-xy_phase_cal = '/tank/data/FRBs/FRB200216/iquv/3C286/CB05/on/npy/stokesxy_phase_3c286_frequency.npy'
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
     if os.path.exists(dedisp_data_path):
@@ -168,9 +159,9 @@ if __name__ == '__main__':
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         fn_xy_phase = inputs.basedir+'/polcal/xy_phase.npy'
         print("Calibrating bandpass")
-        stokes_arr = bandpass_correct(stokes_arr, fn_bandpass)
+        stokes_arr_cal = bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation")
-        stokes_arr = xy_correct(stokes_arr, fn_xy_phase, plot=False)
+        stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=False)
 
     plot_dedisp = True
     bandpass_correct = True
