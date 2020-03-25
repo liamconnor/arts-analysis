@@ -64,7 +64,6 @@ def plot_dedisp(stokes_arr, pulse_width=1):
     plt.show()
 
 def bandpass_correct(stokes_arr, bandpass_path):
-    print(bandpass_path)
     bp_arr = np.load(bandpass_path)
     stokes_arr /= bp_arr[None, :, None]
 
@@ -153,7 +152,8 @@ if __name__ == '__main__':
         print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
         dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
-        stokes_arr, pulse_sample = generate_iquv_arr(dpath, dedisp_data_path=dedisp_data_path, DM=DM)
+        stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
+                                    dedisp_data_path=dedisp_data_path, DM=DM)
 
     if inputs.plot_dedisp:
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
@@ -166,9 +166,11 @@ if __name__ == '__main__':
            exit()
 
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
+        fn_xy_phase = inputs.basedir+'/polcal/xy_phase.npy'
         print("Calibrating bandpass")
-        bandpass_correct(stokes_arr, fn_bandpass)
+        stokes_arr = bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation")
+        stokes_arr = xy_correct(stokes_arr, fn_xy_phase, plot=False)
 
     plot_dedisp = True
     bandpass_correct = True
