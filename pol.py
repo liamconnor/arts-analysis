@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import matplotlib.pylab as plt
 import glob 
@@ -65,6 +67,50 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
     pulse_sample = np.argmax(arr_list[0].mean(0))
 
     return arr_list, pulse_sample
+
+def get_bandpass(stokes_I, alpha=0.51, freq=(1219.70092773,1519.50561523)):
+    """ Get bandpass from calibration observation. 
+    alpha is powerlaw index, default is 0.51 for 3C286
+    """
+    freq_arr = np.linspace(freq[0], freq[1], NFREQ)
+    bandpass = stokes_I*(freq_arr/1370.0)**alpha
+    return bandpass
+
+def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
+    """ This function should get both bandpass calibration and 
+    a polarisation calibration from some point source (usually 3C286)
+    """
+    alpha_dict = {'3C286' : 0.51}
+    fn_spec = basedir+'/polcal/stokes_uncal_spectra.npy'
+
+    if os.path.exists(fn_spec):
+        stokes_arr_spec = np.load(fn_spec)
+    else:
+        dpath = basedir+'/polcal/stokes*sb*npy'
+        arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=1, 
+                                                   rebin_freq=1, dm=0, trans=False,
+                                                   RFI_clean=True)
+        stokes_arr = np.concatenate(arr_list, axis=0)
+        stokes_arr = stokes_arr.reshape(4, NFREQ, -1)
+        stokes_arr_spec = stokes_arr.mean(-1)
+    
+        if save_sol:
+            np.save(fn_spec, stokes_arr_spec)
+
+    I = stokes_arr[0]
+    Q = stokes_arr[1]
+    U = stokes_arr[2]
+    V = stokes_arr[3]
+    
+    xy = U + 1j*V
+
+    bandpass = get_bandpass(I, alpha=alpha_dict[src])
+
+    if save_sol:
+        np.save(basedir+'/polcal/bandpass.npy', bandpass)
+        np.save(basedir+'/polcal/xy_phase.npy', np.angle(xy))
+
+    return stokes_arr, bandpass, np.angle(xy)
 
 def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
     """ Create complex xy spectrum from U/V. Find phase 
