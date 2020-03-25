@@ -87,7 +87,7 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
         stokes_arr_spec = np.load(fn_spec)
     else:
         dpath = basedir+'/polcal/stokes*sb*npy'
-        arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=1, 
+        arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
                                                    rebin_freq=1, dm=0, trans=False,
                                                    RFI_clean=True)
         stokes_arr = np.concatenate(arr_list, axis=0)
