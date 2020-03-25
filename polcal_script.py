@@ -64,7 +64,7 @@ def plot_dedisp(stokes_arr, pulse_width=1):
     plt.show()
 
 def bandpass_correct(stokes_arr, bandpass_path):
-    print(bandpass_correct)
+    print(bandpass_path)
     bp_arr = np.load(bandpass_path)
     stokes_arr /= bp_arr[None, :, None]
 
