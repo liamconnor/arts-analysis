@@ -14,7 +14,19 @@ import matplotlib.pylab as plt
 import tools
 
 # ARTS-discovered FRBs
-known_dms = [663., 956.7, 465.0, 587.0, 531.0]
+known_dms_apertif = [663., 956.7, 465.0, 587.0, 531.0]
+name_apertif = ['Ap1','Ap2','Ap3','Ap4','Ap5']
+repeater_dms = [560.0, 189.0, 349.2, 103.5, 450.5, 364.05, 441.0, 1281.6, 425.0, 460.6, 
+                580.05, 552.65, 302, 195.6, 393.6, 222.4, 1378.2, 651.45, 309.6]
+name = ['R1','R2','R3','R4','R5','R6','R7','R8','R9','R10', 
+        'R190208','R190604','R190212','R180908','R190117',
+        'R190303','R190417','R190213','R190907']
+
+repeater_dm_list = known_dms_apertif + repeater_dms
+name_list = name_apertif + name
+
+for ii in range(len(repeater_dm_list)):
+    print("%s : %0.2f" % (name_list[ii], repeater_dm_list[ii]))
 
 if __name__=='__main__':
     def foo_callback(option, opt, value, parser):
@@ -54,6 +66,12 @@ if __name__=='__main__':
 
     options, args = parser.parse_args() 
 
+    if args[0].endswith('.trigger'):
+        fn = args[0]
+        do_scp = False
+    else:
+        do_scp = True
+
     directory = args[0]
     outdir = options.outdir
     dm_max = options.dm_max
@@ -78,32 +96,39 @@ if __name__=='__main__':
 
     for ii in CBs:
         ii = int(ii)
-        os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
-        print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
 
-        fn = outdir + 'CB%0.2d.trigger' % ii
+        if do_scp:
+            os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
+            print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
+            fn = outdir + 'CB%0.2d.trigger' % ii
 
         if not os.path.isfile(fn):
-            print("contining")
+            print("Input file does not exist")
             continue
 
+        print(fn, ii, ii+1)
         dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
+
+        if len(dm)==0:
+            print("nothing")
+            continue 
 
         if options.mk_plot is True:
             fig = plt.figure()
-            plt.scatter(tt, dm, sig, color='k', alpha=0.35)
-            dmlab = np.linspace(np.log2(dm)[1], np.log2(dm)[-1], 5)
+            plt.scatter(tt, dm, 2*sig, color='k', alpha=0.35)
             plt.axhline(dm0, color='red', alpha=0.25)
-            for dms in known_dms:
+            for jj, dms in enumerate(known_dms_apertif):
                 plt.axhline(dms, color='green', alpha=0.25, linestyle='--')
+                plt.text(1.05*tt.max(), dms, name_apertif[jj], fontsize=6)
+            for jj, dms in enumerate(repeater_dms):
+                plt.axhline(dms, color='blue', alpha=0.25, linestyle='--')
+                plt.text(1.05*tt.max(), dms, name[jj], fontsize=6)
+
             plt.xlabel('Time [s]', fontsize=16)
             plt.ylabel('DM', fontsize=16)
+
             plt.title('%s\nCB%0.2d' % (directory, ii), fontsize=15)
             plt.show()
-
-        if len(dm)==0:
-            print("ntohing")
-            continue 
 
         if options.t0==0:
             t0 = tt 

@@ -17,11 +17,7 @@ if __name__=='__main__':
                       help="Mask file produced by rfifind. (Default: No Mask).",
                       default=None)
 
-    parser.add_option('--save_data', dest='save_data', type='str',
-                      help="save each trigger's data. 0=don't save. \
-                      hdf5 = save to hdf5. npy=save to npy. concat to \
-                      save all triggers into one file",
-                      default='hdf5')
+    parser.add_option('--save_data', dest='save_data', action='store_true', default=False)
 
     parser.add_option('--rficlean', dest='rficlean', action='store_true',
                       help="use rficlean if True (default False)", default=False)
@@ -81,7 +77,7 @@ if __name__=='__main__':
                       help="directory to write data to",
                       default='./data/')
 
-    parser.add_option('--beamno', dest='beamno', type='str',
+    parser.add_option('--CB', dest='CB', type='str',
                       help="Beam number of input data",
                       default='')
 
@@ -119,12 +115,25 @@ if __name__=='__main__':
 
     if fn_fil.endswith('fil'):
         sbs = [None]
-    
+        fn_fil_ = fn_fil.strip('.fil')
+    else:
+        fn_fil_ = fn_fil
+
+    if options.CB=='':
+        try:
+            CB = fn_fil.split('CB')[-1][:2]
+            print(CB)
+        except:
+            print("Could not get / wasn't provided a CB number")
+            CB = ''
+    else:
+        CB = options.CB
+
     for sb in sbs:
         print('Plotting SB %s' % sb)
         x = triggers.proc_trigger(fn_fil, options.dm, t0, -1,
                  ndm=options.ndm, mk_plot=True, downsamp=downsamp,
-                 beamno='', fn_mask=None, nfreq_plot=options.nfreq_plot,
+                 beamno=CB, fn_mask=None, nfreq_plot=options.nfreq_plot,
                  ntime_plot=options.ntime_plot,
                  cmap='RdBu', cand_no=1, multiproc=False,
                  rficlean=options.rficlean, snr_comparison=-1,
@@ -134,3 +143,10 @@ if __name__=='__main__':
                  n_iter_time=options.n_iter_time, n_iter_frequency=options.n_iter_frequency, 
                  clean_type=options.clean_type, freq=1370,
                                   sb_generator=sb_generator, sb=sb)
+
+        if options.save_data:
+            if sb is None:
+                sb_ = -1
+            else:
+                sb_ = sb
+            np.save(options.outdir+'/'+fn_fil_.split('/')[-1]+"SB%d_dedisp.npy" % sb_, x[1])
