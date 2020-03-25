@@ -17,9 +17,6 @@ freq_arr = pol.freq_arr
 nfreq = 1536
 rebin_time = 1
 rebin_freq = 1
-DM = 1290.0
-DM = 348.5
-DM = 832.0
 dt = 8.192e-5
 pulse_width = 25 # number of samples to sum over
 transpose = False
@@ -123,22 +120,31 @@ def mk_plot(stokes_arr, pulse_sample=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Runs polarisation calibration",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-f', '--file', help='name of file(s)', type=str, nargs='+', required=True)
+    parser.add_argument('-d', '--basedir', help='base directory of polarisation data', type=str, required=True)
+    parser.add_argument('-p', '--polcal', help='generate iquv array', action='store_true')
     parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
     parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
     parser.add_argument('-pw', '--pulse_width', help='', default=1, type=int)
     parser.add_argument('-xy', '--xy_correct', help='xy calibration path path', default=None, type=str)
-    inputs = parser.parse_args()
+    parser.add_argument('-src', '--src', help='source name', default='3C286', type=str)
 
-    params = glob.glob('/tank/data/FRBs/FRB200322/iquv/numpyarr/DM*txt')[0]
+    inputs = parser.parse_args()
+    obs_name = inputs.basedir.split('/')[4]
+    params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
     DM = float(params.split('DM')[-1].split('_')[0])
+
+    if inputs.polcal:
+        stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(inputs.basedir, 
+                                                                      src=inputs.src, save_sol=True)
 
     if inputs.gen_arr:
         print("Assuming %0.2f" % DM)
-        dedisp_data_path='/tank/data/FRBs/FRB200322/iquv/numpyarr/FRB200322_dedisp.npy'
-        dedisp_data_path='/tank/data/FRBs/R3/20200322/iquv/numpyarr/FRB_R3_dedisp.npy'
-        stokes_arr, pulse_sample = generate_iquv_arr(inputs.file, dedisp_data_path=dedisp_data_path, DM=DM)
+        dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
+        dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
+        stokes_arr, pulse_sample = generate_iquv_arr(dpath, dedisp_data_path=dedisp_data_path, DM=DM)
+
+    exit()
 
     if inputs.plot_dedisp:
         plot_dedisp(stokes_arr, pulse_width=inputs.pulse_width)
