@@ -135,7 +135,8 @@ def defaraday(data, pulse_sample=None, pulse_width=1):
     V = (data[3]-np.median(data[3],keepdims=True,axis=1))/Ispec[:,None]
     Q = Q[:, pulse_sample//pulse_width]
     U = U[:, pulse_sample//pulse_width]
-    Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = pol.derotate_faraday(Q, U, pulse_sample=None, pulse_width=1, RMmin=-1e4, RMmax=1e4)
+    Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = pol.derotate_faraday(Q, U, pulse_sample=None, 
+                                                                     pulse_width=1, RMmin=-1e4, RMmax=1e4)
     plt.plot(np.angle(P_cal))
     plt.show()
 
@@ -214,10 +215,6 @@ if __name__ == '__main__':
         except NameError:
            print("Cannot plot calibrated data if there is no stokes_arr_cal array")
 
+    if inputs.defaraday:
+        defaraday(stokes_arr_cal.reshape(4, 1536, -1, 5).mean(-1), pulse_sample=None, pulse_width=1)
 
-    plot_dedisp = True
-    bandpass_correct = True
-    RFI_clean = True
-    mk_plot = True
-    xy_correct = True
-    defaraday = True
