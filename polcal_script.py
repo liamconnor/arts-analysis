@@ -73,11 +73,22 @@ def bandpass_correct(stokes_arr, bandpass_path):
 
     return stokes_arr
 
-def xy_correct(stokes_arr, fn_xy_phase, plot=False):
+def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
     stokes_arr_cal = np.zeros_like(stokes_arr)
     # Load xy phase cal from 3c286
     xy_phase = np.load(fn_xy_phase)
-    xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(pol.freq_arr)
+    use_ind_xy = np.arange(stokes_arr.shape[1])
+
+    if clean:
+        # abs_diff = np.abs(np.diff(xy_phase))
+        # mu_xy = np.mean(abs_diff)
+        # sig_xy = np.std(abs_diff)
+        # mask_xy = list(np.where(abs_diff < (mu_xy+3*sig_xy))[0])
+        mask_xy = range(235, 395)
+        use_ind_xy = np.delete(use_ind_xy, mask_xy)
+
+    xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
+                    xy_phase[use_ind_xy], 14))(freq_arr)
     # Get FRB stokes I spectrum 
     I, Q, U, V = stokes_arr[0], stokes_arr[1], stokes_arr[2], stokes_arr[3]
     xy_data = U + 1j*V
@@ -85,6 +96,11 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False):
     stokes_arr_cal[2], stokes_arr_cal[3] = xy_data.real, xy_data.imag
     stokes_arr_cal[0] = stokes_arr[0]
     stokes_arr_cal[1] = stokes_arr[1]
+    if plot:
+        plt.plot(xy_phase)
+        plt.plot(mask_xy, xy_phase[mask_xy])
+        plt.plot(xy_cal, color='red')
+        plt.legend(['XY_phase_calibrator', 'masked', 'Cal sol'])
 
     return stokes_arr_cal
 
@@ -192,7 +208,11 @@ if __name__ == '__main__':
 
     if inputs.plot_stokes:
         mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
-        mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
+        try:
+           stokes_arr_cal
+           mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
+        except NameError:
+           print("Cannot plot calibrated data if there is no stokes_arr_cal array")
 
 
     plot_dedisp = True
