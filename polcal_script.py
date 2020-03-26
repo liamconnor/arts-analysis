@@ -174,7 +174,7 @@ if __name__ == '__main__':
     if inputs.polcal:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
         stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(inputs.basedir, 
-                                                                      src=inputs.src, save_sol=True)
+                                                        src=inputs.src, save_sol=True)
 
     if inputs.gen_arr:
         print("Assuming %0.2f for %s" % (DM, obs_name))
@@ -204,7 +204,7 @@ if __name__ == '__main__':
         print("Calibrating bandpass")
         stokes_arr_cal = bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation")
-        stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=False)
+        stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=True, clean=True)
 
     if inputs.plot_stokes:
         mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
