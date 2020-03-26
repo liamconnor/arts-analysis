@@ -127,9 +127,12 @@ def plot_xy_corr(data):
         exit()
 
 def defaraday(data, pulse_sample=None, pulse_width=1):
+    """ Pulse sample should be None, a slice, or an integer.
+    """ 
     if pulse_sample is None:
         pulse_sample = np.argmax(data[0].mean(0))
 
+    Ispec = data[0, :, pulse_sample]
     Q = (data[1]-np.median(data[1],keepdims=True,axis=1))/Ispec[:,None]
     U = (data[2]-np.median(data[2],keepdims=True,axis=1))/Ispec[:,None]
     V = (data[3]-np.median(data[3],keepdims=True,axis=1))/Ispec[:,None]
