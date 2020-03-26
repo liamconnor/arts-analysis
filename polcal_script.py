@@ -216,6 +216,6 @@ if __name__ == '__main__':
            print("Cannot plot calibrated data if there is no stokes_arr_cal array")
 
     if inputs.faraday:
-        defaraday(stokes_arr_cal.reshape(4, 1536, -1, 5).mean(-1), 
-                        pulse_sample=None, pulse_width=1)
+        defaraday(stokes_arr_cal, 
+                  pulse_sample=None, pulse_width=1)
 
