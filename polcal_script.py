@@ -152,13 +152,13 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--basedir', help='base directory of polarisation data', type=str, required=True)
     parser.add_argument('-p', '--polcal', help='generate iquv array', action='store_true')
     parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
+    parser.add_argument('-F', '--faraday', help='Faraday fit and de-rotate', action='store_true')
     parser.add_argument('-sb', '--gen_sb', help='generate SB from npy files', action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
     parser.add_argument('-ps', '--plot_stokes', help='plot 2D stokes data', action='store_true')
     parser.add_argument('-c', '--calibrate_frb', help='use non-switch polcal solution to cal FRB', action='store_true')
     parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
     parser.add_argument('-pw', '--pulse_width', help='', default=1, type=int)
-    parser.add_argument('-xy', '--xy_correct', help='xy calibration path path', default=None, type=str)
     parser.add_argument('-src', '--src', help='source name', default='3C286', type=str)
 
     inputs = parser.parse_args()
@@ -215,6 +215,7 @@ if __name__ == '__main__':
         except NameError:
            print("Cannot plot calibrated data if there is no stokes_arr_cal array")
 
-    if inputs.defaraday:
-        defaraday(stokes_arr_cal.reshape(4, 1536, -1, 5).mean(-1), pulse_sample=None, pulse_width=1)
+    if inputs.faraday:
+        defaraday(stokes_arr_cal.reshape(4, 1536, -1, 5).mean(-1), 
+                        pulse_sample=None, pulse_width=1)
 
