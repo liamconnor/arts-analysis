@@ -89,6 +89,8 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
 
     xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
                     xy_phase[use_ind_xy], 14))(freq_arr)
+    for ii in range(4):
+        stokes_arr[ii] -= np.median(stokes_arr[ii], keepdims=True, axis=-1)
     # Get FRB stokes I spectrum 
     I, Q, U, V = stokes_arr[0], stokes_arr[1], stokes_arr[2], stokes_arr[3]
     xy_data = U + 1j*V
@@ -138,6 +140,7 @@ def defaraday(data, pulse_sample=None, pulse_width=1):
     V = (data[3]-np.median(data[3],keepdims=True,axis=1))/Ispec[:,None]
     Q = Q[:, pulse_sample//pulse_width]
     U = U[:, pulse_sample//pulse_width]
+
     Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = pol.derotate_faraday(Q, U, pulse_sample=None, 
                                                                      pulse_width=1, RMmin=-1e4, RMmax=1e4)
     plt.plot(np.angle(P_cal))
