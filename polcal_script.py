@@ -281,6 +281,7 @@ if __name__ == '__main__':
         P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
         plt.plot(np.max(P_derot_arr, axis=-1))
+        plt.show()
 
 
 
