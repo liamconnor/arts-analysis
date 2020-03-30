@@ -222,8 +222,9 @@ if __name__ == '__main__':
            print("Cannot plot calibrated data if there is no stokes_arr_cal array")
 
     if inputs.faraday:
-         P_derot_arr, RMmax, phimax, derot_phase = faraday_fit(stokes_vec, RMmin=-1e4, 
-                                                     RMmax=1e4, nrm=5000, nphi=500)
+         results_faraday = pol.faraday_fit(stokes_vec, RMmin=-1e4, 
+                                   RMmax=1e4, nrm=5000, nphi=500)
+         P_derot_arr, RMmax, phimax, derot_phase = results_faraday
          print(RMmax, phimax)
 
 
