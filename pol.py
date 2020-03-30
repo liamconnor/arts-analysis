@@ -19,7 +19,8 @@ dt = 8.192e-5
 rebin_time=1
 rebin_freq=1
 
-def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_clean=False):
+def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, 
+                  DM=0.0, trans=True, RFI_clean=False):
     """ Read in all 4 arrays, dedisperse, 
     return list with median-subtracted, rebinned 
     [arr_I, arr_Q, arr_U, arr_V]
@@ -50,7 +51,7 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_cle
         if RFI_clean:
             arr = tools.cleandata(arr, clean_type='perchannel')
 
-        arr = tools.dedisperse(arr, dm, freq=freq)[:, :last_ind]
+        arr = tools.dedisperse(arr, DM, freq=freq)[:, :last_ind]
         nt, nf = arr.shape[-1], arr.shape[0]
 #        arr = arr - np.median(arr, axis=-1, keepdims=True)
         arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
