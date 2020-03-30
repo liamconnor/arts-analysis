@@ -188,6 +188,10 @@ if __name__ == '__main__':
                         default=1, type=int)
     parser.add_argument('-src', '--src', help='source name', 
                         default='3C286', type=str)
+    parser.add_argument('-rmmin', '--rmmin', help='min RM to search', 
+                        default=-1e4, type=float)
+    parser.add_argument('-rmmax', '--rmmax', help='max RM to search', 
+                        default=1e4, type=float)
 
     inputs = parser.parse_args()
     obs_name = inputs.basedir.split('/')[4]
@@ -263,11 +267,14 @@ if __name__ == '__main__':
            print("Cannot plot calibrated data if there is no stokes_arr_cal")
 
     if inputs.faraday or inputs.All:
+        print("Faraday fitting between %0.2f and %0.2f" % 
+                    (inputs.rmmin, inputs.rmmax))
         stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)
-        results_faraday = pol.faraday_fit(stokes_vec, RMmin=-1e4, 
-                                   RMmax=1e4, nrm=1000, nphi=200)
+        results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
+                                   RMmax=inputs.rmmax, nrm=1000, nphi=200)
         P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
+        plt.plot(np.max(P_derot_arr, axis=-1))
 
 
 
