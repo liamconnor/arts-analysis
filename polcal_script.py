@@ -205,12 +205,19 @@ if __name__ == '__main__':
         exit()
 
     DM = float(params.split('DM')[-1].split('_')[0])
+    SB = int(params.split('SB')[-1].split('_')[0])
 
     if inputs.gen_sb or inputs.All:
         print("Generating SB from npy data")
-        folder = inputs.basedir+'/polcal/'
-        pol.sb_from_npy(folder, sb=35, off_src=False)
-        pol.sb_from_npy(folder, sb=35, off_src=True)
+
+        if inputs.polcal or inputs.All:
+            folder_polcal = inputs.basedir+'/polcal/'
+            pol.sb_from_npy(folder_polcal, sb=35, off_src=False)
+            pol.sb_from_npy(folder_polcal, sb=35, off_src=True)
+
+        folder = inputs.basedir+'/numpyarr/'
+        pol.sb_from_npy(folder, sb=SB, off_src=False)
+
 
     if inputs.polcal or inputs.All:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
