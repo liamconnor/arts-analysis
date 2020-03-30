@@ -8,15 +8,7 @@ import matplotlib.pylab as plt
 from darc.sb_generator import SBGenerator
 import tools
 
-dpath='/tank/users/oostrum/iquv/FRBs/20191108-18:11:00_FRBfield/CB21/stokes*_tab00.npy'
-dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/SB37*npy'
-dpath = '/tank/data/FRBs/FRB191108/iquv/CB21/numpyarr/stokes*sb37.npy'
-bandpass = np.load('/tank/data/FRBs/FRB191108/iquv/CB21/polcal/bandpass_from_3c286_alpha-0.54.npy')
-#dpath='/data1/output/20191128/2019-11-28-18:00:00.B0329+54/iquv/dada/stokes*_tab00.npy'
-#dpath='./stokes*tab00.npy'
 stokes_ps = ['I', 'Q', 'U', 'V']
-DM = 588.125
-RM_guess = 474.0
 
 trans=False
 NFREQ = 1536
@@ -26,8 +18,6 @@ lam_arr = 3e2 / freq_arr
 dt = 8.192e-5
 rebin_time=1
 rebin_freq=1
-
-stokes_list = ['I', 'Q', 'U', 'V']
 
 def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=0.0, trans=True, RFI_clean=False):
     """ Read in all 4 arrays, dedisperse, 
@@ -119,7 +109,7 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
         stokes_arr_spec = np.load(fn_spec)
     else:
         stokes_arr_spec = np.zeros([4, NFREQ])
-        for ii, ss in enumerate(stokes_list):
+        for ii, ss in enumerate(stokes_ps):
             don = np.load(basedir+'/polcal/stokes%s_sb_on.npy' % ss)
             doff = np.load(basedir+'/polcal/stokes%s_sb_off.npy' % ss)
         # arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
