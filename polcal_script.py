@@ -269,7 +269,13 @@ if __name__ == '__main__':
     if inputs.faraday or inputs.All:
         print("Faraday fitting between %0.2f and %0.2f" % 
                     (inputs.rmmin, inputs.rmmax))
-        stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)
+
+        if stokes_arr_cal:
+            stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)            
+        else:
+            print("Using uncalibrated data")
+            stokes_vec = stokes_arr[..., pulse_sample-4:pulse_sample+5].mean(-1)            
+
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                    RMmax=inputs.rmmax, nrm=1000, nphi=200)
         P_derot_arr, RMmax, phimax, derot_phase = results_faraday
