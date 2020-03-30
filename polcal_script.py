@@ -278,9 +278,9 @@ if __name__ == '__main__':
 
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                    RMmax=inputs.rmmax, nrm=1000, nphi=200)
-        P_derot_arr, RMmax, phimax, derot_phase = results_faraday
+        RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
-        plt.plot(np.max(P_derot_arr, axis=-1))
+        plt.plot(RMs, np.max(P_derot_arr, axis=-1))
         plt.show()
 
 

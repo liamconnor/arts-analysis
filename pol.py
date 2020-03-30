@@ -243,7 +243,7 @@ def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4, nrm=5000, nphi=500):
 
     derot_phase = np.exp(-2j*(RMmax*lam_arr**2)+phimax*1j)
 
-    return P_derot_arr, RMmax, phimax, derot_phase
+    return RMs, P_derot_arr, RMmax, phimax, derot_phase
 
 def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
     """ Plot data before calibration
