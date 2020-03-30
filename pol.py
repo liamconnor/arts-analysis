@@ -203,7 +203,6 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
     arr_U -= np.median(arr_U, axis=-1, keepdims=True)
 
     P = arr_Q + 1j*arr_U
-         = 3e2 / np.linspace(freq[0], freq[-1], P.shape[0])
 
     phis = np.linspace(-2*np.pi, 2*np.pi, 1000)
     RMs = np.linspace(-RMmax, RMmax, 50000)
