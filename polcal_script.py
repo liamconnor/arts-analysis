@@ -270,9 +270,9 @@ if __name__ == '__main__':
         print("Faraday fitting between %0.2f and %0.2f" % 
                     (inputs.rmmin, inputs.rmmax))
 
-        if stokes_arr_cal:
+        try:
             stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)            
-        else:
+        except:
             print("Using uncalibrated data")
             stokes_vec = stokes_arr[..., pulse_sample-4:pulse_sample+5].mean(-1)            
 
@@ -281,6 +281,10 @@ if __name__ == '__main__':
         P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
         plt.plot(np.max(P_derot_arr, axis=-1))
+
+
+
+
 
 
 
