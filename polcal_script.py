@@ -155,42 +155,61 @@ def mk_plot(stokes_arr, pulse_sample=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Runs polarisation calibration",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-d', '--basedir', help='base directory of polarisation data', type=str, required=True)
-    parser.add_argument('-p', '--polcal', help='generate iquv array', action='store_true')
-    parser.add_argument('-g', '--gen_arr', help='generate iquv array', action='store_true')
-    parser.add_argument('-F', '--faraday', help='Faraday fit and de-rotate', action='store_true')
-    parser.add_argument('-sb', '--gen_sb', help='generate SB from npy files', action='store_true')
-    parser.add_argument('-pd', '--plot_dedisp', help='plot 1D stokes data in time', action='store_true')
-    parser.add_argument('-ps', '--plot_stokes', help='plot 2D stokes data', action='store_true')
-    parser.add_argument('-c', '--calibrate_frb', help='use non-switch polcal solution to cal FRB', action='store_true')
-    parser.add_argument('-b', '--bandpass_file', help='correct bandpass', default=None, type=str)
-    parser.add_argument('-pw', '--pulse_width', help='', default=1, type=int)
-    parser.add_argument('-src', '--src', help='source name', default='3C286', type=str)
+    parser.add_argument('-d', '--basedir', 
+                        help='base directory of polarisation data', 
+                        type=str, required=True)
+    parser.add_argument('-A', '--All', 
+                        help='Do every step in the pipeline', action='store_true')
+    parser.add_argument('-p', '--polcal', 
+                        help='generate iquv array', action='store_true')
+    parser.add_argument('-g', '--gen_arr', 
+                        help='generate iquv array', action='store_true')
+    parser.add_argument('-F', '--faraday', 
+                        help='Faraday fit and de-rotate', 
+                        action='store_true')
+    parser.add_argument('-sb', '--gen_sb', 
+                        help='generate SB from npy files', 
+                        action='store_true')
+    parser.add_argument('-pd', '--plot_dedisp', 
+                        help='plot 1D stokes data in time', 
+                        action='store_true')
+    parser.add_argument('-ps', '--plot_stokes', 
+                        help='plot 2D stokes data', 
+                        action='store_true')
+    parser.add_argument('-c', '--calibrate_frb', 
+                        help='use non-switch polcal solution to cal FRB', 
+                        action='store_true')
+    parser.add_argument('-b', '--bandpass_file', help='correct bandpass', 
+                        default=None, type=str)
+    parser.add_argument('-pw', '--pulse_width', help='', 
+                        default=1, type=int)
+    parser.add_argument('-src', '--src', help='source name', 
+                        default='3C286', type=str)
 
     inputs = parser.parse_args()
     obs_name = inputs.basedir.split('/')[4]
     params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
     DM = float(params.split('DM')[-1].split('_')[0])
 
-    if inputs.gen_sb:
+    if inputs.gen_sb or inputs.All:
         print("Generating SB from npy data")
         folder = inputs.basedir+'/polcal/'
         pol.sb_from_npy(folder, sb=35, off_src=False)
         pol.sb_from_npy(folder, sb=35, off_src=True)
 
-    if inputs.polcal:
+    if inputs.polcal or inputs.All:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
         stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(inputs.basedir, 
                                                         src=inputs.src, save_sol=True)
 
-    if inputs.gen_arr:
+    if inputs.gen_arr or inputs.All:
         print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
         dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
         stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM)
 
-    if inputs.plot_dedisp:
+    if inputs.plot_dedisp or inputs.All:
         try:
            stokes_arr
         except NameError:
@@ -199,7 +218,7 @@ if __name__ == '__main__':
         plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
                     pulse_width=inputs.pulse_width)
 
-    if inputs.calibrate_frb:
+    if inputs.calibrate_frb or inputs.All:
         try:
            stokes_arr
         except NameError:
@@ -213,7 +232,7 @@ if __name__ == '__main__':
         print("Calibrating xy correlation")
         stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=True, clean=True)
 
-    if inputs.plot_stokes:
+    if inputs.plot_stokes or inputs.All:
         mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
         try:
            stokes_arr_cal
@@ -221,10 +240,10 @@ if __name__ == '__main__':
         except NameError:
            print("Cannot plot calibrated data if there is no stokes_arr_cal array")
 
-    if inputs.faraday:
+    if inputs.faraday or inputs.All:
         stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=-1e4, 
-                                   RMmax=1e4, nrm=5000, nphi=500)
+                                   RMmax=1e4, nrm=1000, nphi=200)
         P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
 
