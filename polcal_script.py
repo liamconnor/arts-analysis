@@ -197,7 +197,13 @@ if __name__ == '__main__':
 
     inputs = parser.parse_args()
     obs_name = inputs.basedir.split('/')[4]
-    params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
+    try:
+        params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
+    except:
+        print("Expected a txt file with DM, width, CB, and SB in %s" % (inputs.basedir+'/numpyarr/'))
+        print("e.g. numpyarr/DM588.13_SNR60_CB21_SB37_Width5.txt")
+        exit()
+
     DM = float(params.split('DM')[-1].split('_')[0])
 
     if inputs.gen_sb or inputs.All:
@@ -240,7 +246,7 @@ if __name__ == '__main__':
         fn_xy_phase = inputs.basedir+'/polcal/xy_phase.npy'
         print("Calibrating bandpass")
         stokes_arr_cal = bandpass_correct(stokes_arr, fn_bandpass)
-        print("Calibrating xy correlation")
+        print("Calibrating xy correlation with %s" % inputs.src)
         stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=True, clean=True)
 
