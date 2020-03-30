@@ -306,78 +306,78 @@ def solve_muller(Strue, Sobs):
     return M
     
 
-if __name__=='__main__':
-#        arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
-    arr = np.load('dedispersed_data.npy')
-    pulse_sample = np.argmax(arr[0].mean(0))
+# if __name__=='__main__':
+# #        arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
+#     arr = np.load('dedispersed_data.npy')
+#     pulse_sample = np.argmax(arr[0].mean(0))
 
-    bp = np.load('./bandpass_from_3c286_alpha-0.54.npy')
-    xy_phase = np.load('xy_phase_3c286_frequency.npy')
-    xy_phase[200:400] = 2.6
-    xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(freq_arr)
+#     bp = np.load('./bandpass_from_3c286_alpha-0.54.npy')
+#     xy_phase = np.load('xy_phase_3c286_frequency.npy')
+#     xy_phase[200:400] = 2.6
+#     xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(freq_arr)
 
-    mm=200
-    arr = arr[..., pulse_sample-mm:pulse_sample+mm]
-    for ii in range(4):
-#                arr[ii] = arr[ii][:, pulse_sample-mm:pulse_sample+mm]
-            arr[ii] = arr[ii] - arr[ii][:, :150].mean(-1)[:, None]
+#     mm=200
+#     arr = arr[..., pulse_sample-mm:pulse_sample+mm]
+#     for ii in range(4):
+# #                arr[ii] = arr[ii][:, pulse_sample-mm:pulse_sample+mm]
+#             arr[ii] = arr[ii] - arr[ii][:, :150].mean(-1)[:, None]
             
-    I = arr[0]/bp[:,None]
-    Q = arr[1]/bp[:,None]
-    U = arr[2]/bp[:,None]
-    V = arr[3]/bp[:,None]
+#     I = arr[0]/bp[:,None]
+#     Q = arr[1]/bp[:,None]
+#     U = arr[2]/bp[:,None]
+#     V = arr[3]/bp[:,None]
 
-    I_rebin = I[:, mm-2:mm+2].mean(-1).reshape(-1, 16).mean(-1).repeat(16)
-    I /= np.median(I[:, mm-2:mm+2].mean(-1))
+#     I_rebin = I[:, mm-2:mm+2].mean(-1).reshape(-1, 16).mean(-1).repeat(16)
+#     I /= np.median(I[:, mm-2:mm+2].mean(-1))
 
-    xy_data = (U+1j*V)/I_rebin[:, None]
-    xy_data_cal = xy_data * np.exp(-1j*xy_cal)[:, None]
-    Ucal, Vcal = xy_data_cal.real, xy_data_cal.imag
-    Q /= I_rebin[:, None]
+#     xy_data = (U+1j*V)/I_rebin[:, None]
+#     xy_data_cal = xy_data * np.exp(-1j*xy_cal)[:, None]
+#     Ucal, Vcal = xy_data_cal.real, xy_data_cal.imag
+#     Q /= I_rebin[:, None]
 
-    #arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
-    fig = plt.figure(figsize=(7,9))
-    grid = plt.GridSpec(7,3,hspace=0.0,wspace=0.0)
+#     #arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
+#     fig = plt.figure(figsize=(7,9))
+#     grid = plt.GridSpec(7,3,hspace=0.0,wspace=0.0)
 
-    tt_arr = np.linspace(0, 2*mm*dt*1e3, 2*mm)
-    plt.subplot(grid[:3, :3])
+#     tt_arr = np.linspace(0, 2*mm*dt*1e3, 2*mm)
+#     plt.subplot(grid[:3, :3])
 
-    P = Q + 1j*Ucal
-    P *= np.exp(-2j*RM_guess*lam_arr**2)[:, None]
+#     P = Q + 1j*Ucal
+#     P *= np.exp(-2j*RM_guess*lam_arr**2)[:, None]
 
-    plt.plot(tt_arr, I.mean(0)/I.mean(0).max(), color='k', lw=2., alpha=0.7)        
-    plt.plot(tt_arr, np.abs(P.mean(0)), '--', color='red', lw=2., alpha=0.75)
-    plt.plot(tt_arr, np.abs(Vcal).mean(0)-np.abs(Vcal).mean(), '.', color='mediumseagreen', lw=2.)
-    plt.xlim(tt_arr[150], tt_arr[250])
-#        plt.plot(tt_arr, P.mean(0).imag)
-    plt.ylabel('Intensity',labelpad=15, fontsize=13)
-    plt.legend(['I','L','V'], fontsize=11, loc=1)
+#     plt.plot(tt_arr, I.mean(0)/I.mean(0).max(), color='k', lw=2., alpha=0.7)        
+#     plt.plot(tt_arr, np.abs(P.mean(0)), '--', color='red', lw=2., alpha=0.75)
+#     plt.plot(tt_arr, np.abs(Vcal).mean(0)-np.abs(Vcal).mean(), '.', color='mediumseagreen', lw=2.)
+#     plt.xlim(tt_arr[150], tt_arr[250])
+# #        plt.plot(tt_arr, P.mean(0).imag)
+#     plt.ylabel('Intensity',labelpad=15, fontsize=13)
+#     plt.legend(['I','L','V'], fontsize=11, loc=1)
 
-    plt.subplot(grid[4:, :3])
-    plt.plot(freq_arr[1::2], I[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='k',lw=2, alpha=0.7)
-    plt.plot(freq_arr[1::2], Q[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C0', alpha=0.65,lw=2)
-    plt.plot(freq_arr[1::2], Ucal[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C1',lw=2, alpha=0.6)
-    plt.xlabel('Frequency (MHz)', fontsize=13)
-    plt.ylabel('Intensity',labelpad=15, fontsize=13)
-    plt.ylim(-1., 3.1)
-    plt.xlim(1205.0, 1550)
-    plt.legend(['I','Q','U'], framealpha=1.0, fontsize=11, loc=(0.88, 0.6))
-    plt.grid('on', alpha=0.25)
+#     plt.subplot(grid[4:, :3])
+#     plt.plot(freq_arr[1::2], I[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='k',lw=2, alpha=0.7)
+#     plt.plot(freq_arr[1::2], Q[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C0', alpha=0.65,lw=2)
+#     plt.plot(freq_arr[1::2], Ucal[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C1',lw=2, alpha=0.6)
+#     plt.xlabel('Frequency (MHz)', fontsize=13)
+#     plt.ylabel('Intensity',labelpad=15, fontsize=13)
+#     plt.ylim(-1., 3.1)
+#     plt.xlim(1205.0, 1550)
+#     plt.legend(['I','Q','U'], framealpha=1.0, fontsize=11, loc=(0.88, 0.6))
+#     plt.grid('on', alpha=0.25)
 
-    plt.subplot(grid[3, :3])
-    plt.plot(tt_arr, 180./np.pi*np.angle(P.mean(0)),'.', color='k')
-    plt.xlim(tt_arr[150], tt_arr[250])
-    plt.ylabel('PA (deg)', fontsize=13)
-    plt.xlabel('Time (ms)', labelpad=1, fontsize=13)
+#     plt.subplot(grid[3, :3])
+#     plt.plot(tt_arr, 180./np.pi*np.angle(P.mean(0)),'.', color='k')
+#     plt.xlim(tt_arr[150], tt_arr[250])
+#     plt.ylabel('PA (deg)', fontsize=13)
+#     plt.xlabel('Time (ms)', labelpad=1, fontsize=13)
 
-    plt.tight_layout()
-    plt.savefig('./FRB191108_polarisation.pdf')
-    plt.show()
-    exit()
-#        plot_raw_data(arr)
-#        plot_im_raw(arr)
-    Ucal, Vcal, xy_cal, phi_bf = derotate_UV(arr[2], arr[3], pulse_sample=pulse_sample, pulse_width=1)
-    print(Ucal.shape, arr[1].shape, xy_cal.shape)
-    Ucal = xy_cal.real
-    Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = derotate_faraday(arr[1], Ucal, pulse_sample=pulse_sample, 
-        pulse_width=1, RMmin=0.0, RMmax=1e4)
+#     plt.tight_layout()
+#     plt.savefig('./FRB191108_polarisation.pdf')
+#     plt.show()
+#     exit()
+# #        plot_raw_data(arr)
+# #        plot_im_raw(arr)
+#     Ucal, Vcal, xy_cal, phi_bf = derotate_UV(arr[2], arr[3], pulse_sample=pulse_sample, pulse_width=1)
+#     print(Ucal.shape, arr[1].shape, xy_cal.shape)
+#     Ucal = xy_cal.real
+#     Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = derotate_faraday(arr[1], Ucal, pulse_sample=pulse_sample, 
+#         pulse_width=1, RMmin=0.0, RMmax=1e4)

@@ -267,14 +267,14 @@ if __name__ == '__main__':
            print("Cannot plot calibrated data if there is no stokes_arr_cal")
 
     if inputs.faraday or inputs.All:
-        print("Faraday fitting between %0.2f and %0.2f" % 
+        print("Faraday fitting between %0.1f and %0.1f rad m**-2" % 
                     (inputs.rmmin, inputs.rmmax))
 
         try:
-            stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)            
+            stokes_vec = stokes_arr_cal[..., pulse_sample-1:pulse_sample+1].mean(-1)            
         except:
             print("Using uncalibrated data")
-            stokes_vec = stokes_arr[..., pulse_sample-4:pulse_sample+5].mean(-1)            
+            stokes_vec = stokes_arr[..., pulse_sample-1:pulse_sample+1].mean(-1)            
 
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                    RMmax=inputs.rmmax, nrm=1000, nphi=200)
@@ -283,7 +283,7 @@ if __name__ == '__main__':
         fig=plt.figure()
         plt.plot(RMs, np.max(P_derot_arr, axis=-1))
         fig=plt.figure()
-        extent = [inputs.rmmin, inputs.rmmax, 0, 180]
+        extent = [inputs.rmmin, inputs.rmmax, 0, 360]
         plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
                    vmin=P_derot_arr.max()*0.5)
         plt.xlabel('Phi (deg)', fontsize=16)
