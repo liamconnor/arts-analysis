@@ -7,12 +7,6 @@ import glob
 
 import pol
 
-bandpass_correct = True
-RFI_clean = True
-mk_plot = True
-xy_correct = True
-defaraday = True
-
 freq_arr = pol.freq_arr
 rebin_time = 1
 rebin_freq = 1
@@ -266,8 +260,7 @@ if __name__ == '__main__':
            mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), 
                    pulse_sample=pulse_sample)
         except NameError:
-           print("Cannot plot calibrated data if \
-                  there is no stokes_arr_cal array")
+           print("Cannot plot calibrated data if there is no stokes_arr_cal")
 
     if inputs.faraday or inputs.All:
         stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)

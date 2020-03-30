@@ -278,18 +278,23 @@ def plot_im_raw(arr, pulse_sample=None):
     if pulse_sample is None:
         pulse_sample = np.argmax(arr[0].mean(0))
 
+    I = arr[0][:, pulse_sample-50:pulse_sample+50]
+    Q = arr[1][:, pulse_sample-50:pulse_sample+50]
+    U = arr[2][:, pulse_sample-50:pulse_sample+50]
+    V = arr[3][:, pulse_sample-50:pulse_sample+50]
+
     fig = plt.figure(figsize=(7,7))
     plt.subplot(221)
     plt.ylabel('Freq')    
-    plt.imshow(arr[0][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+    plt.imshow(I-np.median(I,axis=-1,keepdims=True), aspect='auto')
     plt.subplot(222)
-    plt.imshow(arr[1][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+    plt.imshow(Q-np.median(Q,axis=-1,keepdims=True), aspect='auto')
     plt.subplot(223)
-    plt.imshow(arr[2][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+    plt.imshow(U-np.median(U,axis=-1,keepdims=True), aspect='auto')
     plt.xlabel('Time')
     plt.ylabel('Freq')    
     plt.subplot(224)
-    plt.imshow(arr[3][:, pulse_sample-50:pulse_sample+50], aspect='auto')
+    plt.imshow(V-np.median(V,axis=-1,keepdims=True), aspect='auto')
     plt.xlabel('Time')
     plt.show()
 
