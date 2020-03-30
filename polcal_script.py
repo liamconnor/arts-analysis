@@ -14,10 +14,8 @@ xy_correct = True
 defaraday = True
 
 freq_arr = pol.freq_arr
-nfreq = 1536
 rebin_time = 1
 rebin_freq = 1
-dt = 8.192e-5
 pulse_width = 1 # number of samples to sum over
 transpose = False
 
@@ -27,14 +25,19 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
         stokes_arr = np.load(dedisp_data_path)
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     else:
-        arr_list, pulse_sample = pol.make_iquv_arr(dpath, rebin_time=rebin_time, 
-                                                   rebin_freq=rebin_freq, dm=DM, trans=False,
+        arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
+                                                   rebin_time=rebin_time, 
+                                                   rebin_freq=rebin_freq, 
+                                                   dm=DM, 
+                                                   trans=False,
                                                    RFI_clean=True)
         stokes_arr = np.concatenate(arr_list, axis=0)
-        stokes_arr = stokes_arr.reshape(4, nfreq//rebin_freq, -1)
+        stokes_arr = stokes_arr.reshape(4, pol.NFREQ//rebin_freq, -1)
 
         if type(dedisp_data_path)==str:
-            np.save(dedisp_data_path,stokes_arr[:, :, pulse_sample-500:pulse_sample+500])
+            stokes_arr_small = stokes_arr[:, :, 
+                                pulse_sample-500:pulse_sample+500]
+            np.save(dedisp_data_path, stokes_arr_small)
 
     return stokes_arr, pulse_sample
 
@@ -108,15 +111,19 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
 
 def plot_xy_corr(data):
     if mk_plot and xy_correct:
-        ext = [0, len(data[0,0])*1000/50.*dt*1e3, freq_arr.min(), freq_arr.max()]
+        ext = [0, len(data[0,0])*1000/50.*pol.dt*1e3, 
+               freq_arr.min(), freq_arr.max()]
         labels = ['Stokes I', 'Stokes Q', 'Stokes U', 'Stokes V']
         # Rebin in frequency and time
         Ispec = Ispec.reshape(-1, 16).mean(1)
         data = data[..., :data.shape[-1]//pulse_width*pulse_width]
-        data = data.reshape(4, data.shape[1]//16, 16, data.shape[-1]//pulse_width, pulse_width).mean(2).mean(-1)
+        data = data.reshape(4, data.shape[1]//16, 16, 
+                            data.shape[-1]//pulse_width, 
+                            pulse_width).mean(2).mean(-1)
         for ii in range(4):
             plt.subplot(2,2,ii+1)
-            plt.imshow((data[ii]-np.median(data[ii],keepdims=True,axis=1))/Ispec[:,None], 
+            data_med = np.median(data[ii],keepdims=True,axis=1)
+            plt.imshow((data[ii]-data_med)/Ispec[:,None], 
                        aspect='auto', extent=ext)
             plt.text(50, 1480, labels[ii], color='white', fontsize=12)
             if ii%2==0:
@@ -141,8 +148,10 @@ def defaraday(data, pulse_sample=None, pulse_width=1):
     Q = Q[:, pulse_sample//pulse_width]
     U = U[:, pulse_sample//pulse_width]
 
-    Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = pol.derotate_faraday(Q, U, pulse_sample=None, 
-                                                                     pulse_width=1, RMmin=-1e4, RMmax=1e4)
+    results_faraday = pol.derotate_faraday(Q, U, pulse_sample=None, 
+                                           pulse_width=1, RMmin=-1e4, 
+                                           RMmax=1e4)
+    Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = results_faraday
     plt.plot(np.angle(P_cal))
     plt.show()
 
@@ -153,8 +162,8 @@ def mk_plot(stokes_arr, pulse_sample=None):
     pol.plot_raw_data(stokes_arr, pulse_sample=pulse_sample)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Runs polarisation calibration",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description="Runs polarisation pipeline",
+                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--basedir', 
                         help='base directory of polarisation data', 
                         type=str, required=True)
@@ -199,8 +208,10 @@ if __name__ == '__main__':
 
     if inputs.polcal or inputs.All:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
-        stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(inputs.basedir, 
-                                                        src=inputs.src, save_sol=True)
+        stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(
+                                                        inputs.basedir, 
+                                                        src=inputs.src, 
+                                                        save_sol=True)
 
     if inputs.gen_arr or inputs.All:
         print("Assuming %0.2f for %s" % (DM, obs_name))
@@ -230,15 +241,19 @@ if __name__ == '__main__':
         print("Calibrating bandpass")
         stokes_arr_cal = bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation")
-        stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, plot=True, clean=True)
+        stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, 
+                                    plot=True, clean=True)
 
     if inputs.plot_stokes or inputs.All:
-        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
+        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), 
+                pulse_sample=pulse_sample)
         try:
            stokes_arr_cal
-           mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), pulse_sample=pulse_sample)
+           mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), 
+                   pulse_sample=pulse_sample)
         except NameError:
-           print("Cannot plot calibrated data if there is no stokes_arr_cal array")
+           print("Cannot plot calibrated data if \
+                  there is no stokes_arr_cal array")
 
     if inputs.faraday or inputs.All:
         stokes_vec = stokes_arr_cal[..., pulse_sample-4:pulse_sample+5].mean(-1)
