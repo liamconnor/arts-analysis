@@ -280,7 +280,11 @@ if __name__ == '__main__':
                                    RMmax=inputs.rmmax, nrm=1000, nphi=200)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
+        fig=plt.figure()
         plt.plot(RMs, np.max(P_derot_arr, axis=-1))
+        fig=plt.figure()
+        plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
+                   vmin=P_derot_arr.max()*0.5)
         plt.show()
 
 
