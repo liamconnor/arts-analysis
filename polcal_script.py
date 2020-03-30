@@ -28,7 +28,7 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
                                                    rebin_time=rebin_time, 
                                                    rebin_freq=rebin_freq, 
-                                                   dm=DM, 
+                                                   DM=DM, 
                                                    trans=False,
                                                    RFI_clean=True)
         stokes_arr = np.concatenate(arr_list, axis=0)
@@ -200,7 +200,8 @@ if __name__ == '__main__':
     try:
         params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
     except:
-        print("Expected a txt file with DM, width, CB, and SB in %s" % (inputs.basedir+'/numpyarr/'))
+        print("Expected a txt file with DM, width, CB, and SB in %s" % 
+            (inputs.basedir+'/numpyarr/'))
         print("e.g. numpyarr/DM588.13_SNR60_CB21_SB37_Width5.txt")
         exit()
 
