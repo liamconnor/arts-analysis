@@ -283,8 +283,11 @@ if __name__ == '__main__':
         fig=plt.figure()
         plt.plot(RMs, np.max(P_derot_arr, axis=-1))
         fig=plt.figure()
+        extent = [inputs.rmmin, inputs.rmmax, 0, 180]
         plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
                    vmin=P_derot_arr.max()*0.5)
+        plt.xlabel('Phi (deg)', fontsize=16)
+        plt.ylabel('RM (rad m**-2)', fontsize=16)
         plt.show()
 
 
