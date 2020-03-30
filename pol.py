@@ -233,11 +233,11 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
 
     return Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P
 
-def faraday_fit(stokes_vec, RMmin=1e4, RMmax=1e4, nrm=50000, nphi=1000):
+def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4, nrm=5000, nphi=500):
     """ stokes vec should be (4, NFREQ) array
     """
     phis = np.linspace(0, 2*np.pi, nphi)
-    RMs = np.linspace(-RMmax, RMmax, nrm)
+    RMs = np.linspace(RMmin, RMmax, nrm)
 
     P = stokes_vec[1] + 1j*stokes_vec[2]
     P_derot_arr = []
@@ -247,17 +247,13 @@ def faraday_fit(stokes_vec, RMmin=1e4, RMmax=1e4, nrm=50000, nphi=1000):
         for jj, phi in enumerate(phis):
             P_derot_arr[ii,jj] = np.sum(P*np.exp(-2j*(rm*lam_arr**2)+phi*1j))
 
-    RMmax, phimax = np.where(P_derot_arr==P_derot_arr.max())
+    iimax, jjmax = np.where(P_derot_arr==P_derot_arr.max())
+    RMmax = RMs[iimax]
+    phimax = phis[jjmax]
 
     derot_phase = np.exp(-2j*(RMmax*lam_arr**2)+phimax*1j)
 
     return P_derot_arr, RMmax, phimax, derot_phase
-
-for rm in RMs:
-     ...:     for phi in phis:
-     ...:         P_ = P*np.exp(-2j*(rm*lam_arr**2)+phi*1j)
-     ...:         Parr.append(P_.sum())
-     ...:         #param.append(rm, phi)
 
 def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
     """ Plot data before calibration
