@@ -74,10 +74,10 @@ def sb_from_npy(folder, sb=35, off_src=False):
     # get sb map                                                                                         
     sbgen = SBGenerator.from_science_case(4)
     sbmap = sbgen.get_map(sb)
-
+    print(folder)
     # read first file to get shape                                                                       
     shape = np.load('{}/stokesI_tab00.npy'.format(folder)).shape
-
+    
     # init full array                                                                                    
     data_full = np.zeros((12, shape[0], shape[1]))
 
@@ -223,27 +223,36 @@ def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, 
 
     return Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P
 
-def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4, nrm=5000, nphi=500):
+def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4, 
+                nrm=5000, nphi=500, mask=None):
     """ stokes vec should be (4, NFREQ) array
     """
     phis = np.linspace(0, 2*np.pi, nphi)
     RMs = np.linspace(RMmin, RMmax, nrm)
 
     P = stokes_vec[1] + 1j*stokes_vec[2]
+    P -= np.median(P)
+#    P /= stokes_vec[0].reshape(-1, 4).mean(-1).repeat(4)
+    if mask is None:
+        use_ind = range(NFREQ)
+    else:
+        use_ind = np.delete(range(NFREQ), mask)
+
     P_derot_arr = []
     P_derot_arr = np.empty([nrm, nphi])
 
     for ii, rm in enumerate(RMs):
         for jj, phi in enumerate(phis):
-            P_derot_arr[ii,jj] = np.sum(P*np.exp(-2j*(rm*lam_arr**2)+phi*1j))
+            phase_ = np.exp(-2j*(rm*lam_arr[use_ind]**2)+phi*1j)
+            P_derot_arr[ii,jj] = np.sum(P[use_ind]*phase_)
 
     iimax, jjmax = np.where(P_derot_arr==P_derot_arr.max())
-    RMmax = RMs[iimax]
-    phimax = phis[jjmax]
+    RMbf = RMs[iimax]
+    phibf = phis[jjmax]
 
-    derot_phase = np.exp(-2j*(RMmax*lam_arr**2)+phimax*1j)
+    derot_phase = np.exp(-2j*(RMbf*lam_arr**2)+phibf*1j)
 
-    return RMs, P_derot_arr, RMmax, phimax, derot_phase
+    return RMs, P_derot_arr, RMbf, phibf, derot_phase
 
 def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
     """ Plot data before calibration
@@ -261,7 +270,8 @@ def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 
     freq_arr = np.linspace(freq[0], freq[-1], arr[0].shape[0])
     plt.subplot(211)
-    [plt.plot(freq_arr, arr_spectra[jj], alpha=0.7, lw=3) for jj in range(4)]
+#    [plt.plot(freq_arr, arr_spectra[jj], alpha=0.7, lw=3) for jj in range(4)]
+    [plt.plot(arr_spectra[jj], alpha=0.7, lw=3) for jj in range(4)]
     plt.legend(['uncal I','uncal Q','uncal U','uncal V'])
 
     plt.subplot(212)

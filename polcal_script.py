@@ -5,6 +5,7 @@ import matplotlib.pylab as plt
 import argparse 
 import glob
 
+import tools
 import pol
 
 freq_arr = pol.freq_arr
@@ -12,6 +13,7 @@ rebin_time = 1
 rebin_freq = 1
 pulse_width = 1 # number of samples to sum over
 transpose = False
+SNRtools = tools.SNR_Tools()
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
     if os.path.exists(dedisp_data_path):
@@ -40,6 +42,10 @@ def read_dedisp_data(dpath):
     pulse_sample = np.argmax(stokes_arr[0].mean(0))
 
     return stokes_arr, pulse_sample
+
+def get_width(data):
+    snr_max, width_max = SNRtools.calc_snr_matchedfilter(data, widths=range(500))
+    return snr_max, width_max
 
 def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     #stokes_arr = stokes_arr[..., :len(stokes_arr[-1])//pulse_width*pulse_width]
@@ -227,7 +233,6 @@ if __name__ == '__main__':
         folder = inputs.basedir+'/numpyarr/'
         pol.sb_from_npy(folder, sb=SB, off_src=False)
 
-
     if inputs.polcal or inputs.All:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
         stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(
@@ -238,9 +243,15 @@ if __name__ == '__main__':
     if inputs.gen_arr or inputs.All:
         print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
-        dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
-        stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
+        flist_sb = glob.glob(dpath)
+        if len(flist_sb)==0:
+            print("No SB data, cannot generate stokes array")
+        else:
+            dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
+            stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM)
+
+            snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
     if inputs.plot_dedisp or inputs.All:
         try:
@@ -281,19 +292,27 @@ if __name__ == '__main__':
                     (inputs.rmmin, inputs.rmmax))
 
         try:
-            stokes_vec = stokes_arr_cal[..., pulse_sample-1:pulse_sample+1].mean(-1)            
+            stokes_vec = stokes_arr_cal
         except:
             print("Using uncalibrated data")
-            stokes_vec = stokes_arr[..., pulse_sample-1:pulse_sample+1].mean(-1)            
+            stokes_vec = stokes_arr
+
+        ntime = stokes_vec.shape[-1]
+        stokes_vec = stokes_vec[..., :ntime//width_max*width_max]
+        stokes_vec = stokes_vec.reshape(4, 1536, -1, width_max).mean(-1)
+        pulse_sample = np.argmax(stokes_vec[0].mean(0))
+        stokes_vec = stokes_vec[..., pulse_sample]
+        print("Rebinning in time by %d" % width_max)
 
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
-                                   RMmax=inputs.rmmax, nrm=1000, nphi=200)
+                                          RMmax=inputs.rmmax, nrm=1000, nphi=200, 
+                                          mask=None)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
         fig=plt.figure()
         plt.plot(RMs, np.max(P_derot_arr, axis=-1))
         fig=plt.figure()
-        extent = [inputs.rmmin, inputs.rmmax, 0, 360]
+        extent=[0, 360, inputs.rmmin, inputs.rmmax]
         plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
                    vmin=P_derot_arr.max()*0.5, extent=extent)
         plt.xlabel('Phi (deg)', fontsize=16)
