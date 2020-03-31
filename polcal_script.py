@@ -129,25 +129,23 @@ def plot_xy_corr(data):
         plt.show()
         exit()
 
-def defaraday(data, pulse_sample=None, pulse_width=1):
-    """ Pulse sample should be None, a slice, or an integer.
-    """ 
-    if pulse_sample is None:
-        pulse_sample = np.argmax(data[0].mean(0))
+def check_dirs(fdir):
+    """ Expecting: 
+    fdir/numpyarr
+    fdir/polcal
+    fdir/dada
+    fdir/numpyarr/
+    """
+    if not os.path.isdir(fdir+'/numpyarr'):
+        os.mkdir(fdir+'/numpyarr')
 
-    Ispec = data[0, :, pulse_sample]
-    Q = (data[1]-np.median(data[1],keepdims=True,axis=1))/Ispec[:,None]
-    U = (data[2]-np.median(data[2],keepdims=True,axis=1))/Ispec[:,None]
-    V = (data[3]-np.median(data[3],keepdims=True,axis=1))/Ispec[:,None]
-    Q = Q[:, pulse_sample//pulse_width]
-    U = U[:, pulse_sample//pulse_width]
+    if not os.path.isdir(fdir+'/polcal'):
+        print('Making empty polcal dir')
+        os.mkdir(fdir+'/polcal')
 
-    results_faraday = pol.derotate_faraday(Q, U, pulse_sample=None, 
-                                           pulse_width=1, RMmin=-1e4, 
-                                           RMmax=1e4)
-    Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = results_faraday
-    plt.plot(np.angle(P_cal))
-    plt.show()
+    if not os.path.isdir(fdir+'/dada'):
+        print('Making empty dada dir')
+        os.mkdir(fdir+'/dada/')        
 
 def mk_plot(stokes_arr, pulse_sample=None):
     if pulse_sample is None:
@@ -173,6 +171,9 @@ if __name__ == '__main__':
     parser.add_argument('-sb', '--gen_sb', 
                         help='generate SB from npy files', 
                         action='store_true')
+    parser.add_argument('-dd', '--dada', 
+                        help='generate numpy files from dada',
+                        action='store_true')
     parser.add_argument('-pd', '--plot_dedisp', 
                         help='plot 1D stokes data in time', 
                         action='store_true')
@@ -195,6 +196,15 @@ if __name__ == '__main__':
 
     inputs = parser.parse_args()
     obs_name = inputs.basedir.split('/')[4]
+
+    check_dirs(inputs.basedir)
+
+    if inputs.dada or inputs.All:
+        fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
+        outdir = inputs.basedir+'/numpyarr/'
+        print("Converting dada into numpy for %s" % fndada)
+        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+
     try:
         params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
     except:
