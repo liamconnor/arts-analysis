@@ -189,8 +189,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--calibrate_frb', 
                         help='use non-switch polcal solution to cal FRB', 
                         action='store_true')
-    parser.add_argument('-b', '--bandpass_file', help='correct bandpass', 
-                        default=None, type=str)
     parser.add_argument('-pw', '--pulse_width', help='', 
                         default=1, type=int)
     parser.add_argument('-src', '--src', help='source name', 
@@ -208,8 +206,13 @@ if __name__ == '__main__':
     if inputs.dada or inputs.All:
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
-        print("Converting dada into numpy for %s" % fndada)
-        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+#        print("Converting dada into numpy for %s" % fndada)
+#        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+        if inputs.polcal:
+            fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
+            outdir = inputs.basedir+'/polcal/'
+            os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+            
 
     try:
         params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
@@ -228,7 +231,7 @@ if __name__ == '__main__':
         if inputs.polcal or inputs.All:
             folder_polcal = inputs.basedir+'/polcal/'
             pol.sb_from_npy(folder_polcal, sb=35, off_src=False)
-            pol.sb_from_npy(folder_polcal, sb=35, off_src=True)
+            #hack pol.sb_from_npy(folder_polcal, sb=35, off_src=True)
 
         folder = inputs.basedir+'/numpyarr/'
         pol.sb_from_npy(folder, sb=SB, off_src=False)
@@ -302,11 +305,15 @@ if __name__ == '__main__':
         stokes_vec = stokes_vec.reshape(4, 1536, -1, width_max).mean(-1)
         pulse_sample = np.argmax(stokes_vec[0].mean(0))
         stokes_vec = stokes_vec[..., pulse_sample]
+        Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], stokes_vec[3])
+        stokes_vec[2] = Ucal
+        stokes_vec[3] = Vcal
         print("Rebinning in time by %d" % width_max)
-
+        mask = np.where(stokes_vec[0].sum(-1)==0)[0]
+        np.save('./text', stokes_vec)
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                           RMmax=inputs.rmmax, nrm=1000, nphi=200, 
-                                          mask=None)
+                                          mask=mask)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
         fig=plt.figure()

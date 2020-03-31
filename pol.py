@@ -112,7 +112,11 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
         stokes_arr_spec = np.zeros([4, NFREQ])
         for ii, ss in enumerate(stokes_ps):
             don = np.load(basedir+'/polcal/stokes%s_sb_on.npy' % ss)
-            doff = np.load(basedir+'/polcal/stokes%s_sb_off.npy' % ss)
+            try:
+                doff = np.load(basedir+'/polcal/stokes%s_sb_off.npy' % ss)
+            except:
+                print("There is no polcal off npy file")
+                doff = 0*don
         # arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
         #                                            rebin_freq=1, dm=0, trans=False,
         #                                            RFI_clean=True)
@@ -160,15 +164,16 @@ def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
     Ucal, Vcal, xy_cal, phi_bf
     """
     xy = arr_U + 1j*arr_V
+    xy.real -= np.median(xy.real)
+    xy.imag -= np.median(xy.imag)
+#    if pulse_sample is None:
+#        pulse_sample = np.argmax(np.sqrt(arr_U**2 + arr_V**2).mean(0))
 
-    if pulse_sample is None:
-        pulse_sample = np.argmax(np.sqrt(arr_U**2 + arr_V**2).mean(0))
-
-    if pulse_width>1:
-        xy_pulse = xy[:, pulse_sample-pulse_width//2:pulse_sample+pulse_width//2].mean(-1)
-    else:
-        xy_pulse = xy[:, pulse_sample]
-
+#    if pulse_width>1:
+#        xy_pulse = xy[:, pulse_sample-pulse_width//2:pulse_sample+pulse_width//2].mean(-1)
+#    else:
+#        xy_pulse = xy[:, pulse_sample]
+    xy_pulse = xy
     phis = np.linspace(-np.pi, np.pi, 1000)
 
     phase_std = []
@@ -231,7 +236,8 @@ def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4,
     RMs = np.linspace(RMmin, RMmax, nrm)
 
     P = stokes_vec[1] + 1j*stokes_vec[2]
-    P -= np.median(P)
+    P.real -= np.median(P.real)
+    P.imag -= np.median(P.imag)
 #    P /= stokes_vec[0].reshape(-1, 4).mean(-1).repeat(4)
     if mask is None:
         use_ind = range(NFREQ)
