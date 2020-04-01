@@ -153,11 +153,11 @@ def check_dirs(fdir):
         print('Making empty dada dir')
         os.mkdir(fdir+'/dada/')        
 
-def mk_plot(stokes_arr, pulse_sample=None):
+def mk_plot(stokes_arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
-    pol.plot_im_raw(stokes_arr, pulse_sample=pulse_sample)
-    pol.plot_raw_data(stokes_arr, pulse_sample=pulse_sample)
+    pol.plot_im_raw(stokes_arr, pulse_sample=pulse_sample, pulse_width=pulse_width)
+    pol.plot_raw_data(stokes_arr, pulse_sample=pulse_sample, pulse_width=pulse_width)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Runs polarisation pipeline",
@@ -281,12 +281,12 @@ if __name__ == '__main__':
                                     plot=True, clean=True)
 
     if inputs.plot_stokes or inputs.All:
-        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(-2), 
-                pulse_sample=pulse_sample)
+        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
+                pulse_sample=pulse_sample, pulse_width=8)
         try:
            stokes_arr_cal
-           mk_plot(stokes_arr_cal.reshape(4, 1536//16, 16, -1).mean(-2), 
-                   pulse_sample=pulse_sample)
+           mk_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
+                   pulse_sample=pulse_sample, pulse_width=8)
         except NameError:
            print("Cannot plot calibrated data if there is no stokes_arr_cal")
 
@@ -308,16 +308,42 @@ if __name__ == '__main__':
         Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], stokes_vec[3])
         stokes_vec[2] = Ucal
         stokes_vec[3] = Vcal
+
+        U,V = stokes_arr[2], stokes_arr[3]
+        XY = U+1j*V
+        XY *= np.exp(-1j*phi_xy)
+        stokes_arr[2], stokes_arr[3] = XY.real, XY.imag
+        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)
+        stokes_arr_ = stokes_arr_.reshape(4, 1536//16, -1, 5).mean(-1)
+        plt.subplot(221)
+        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
+        plt.subplot(222)
+        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
+        plt.subplot(223)
+        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
+        plt.subplot(224)
+        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
+        plt.show()
+        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
+                pulse_sample=pulse_sample, pulse_width=8)
+
         print("Rebinning in time by %d" % width_max)
-        mask = np.where(stokes_vec[0].sum(-1)==0)[0]
+        mask = list(np.where(stokes_vec[0]==0)[0])
+        mask += range(0,700)
+        mask = list(set(mask))
         np.save('./text', stokes_vec)
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                           RMmax=inputs.rmmax, nrm=1000, nphi=200, 
-                                          mask=mask)
+                                          mask=mask, plot=True)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
         print(RMmax, phimax)
         fig=plt.figure()
         plt.plot(RMs, np.max(P_derot_arr, axis=-1))
+        plt.ylabel('Defaraday amplitude', fontsize=16)
+        plt.xlabel(r'RM (rad m$^{-2}$)', fontsize=16)
+        plt.axvline(RMmax, color='r', linestyle='--')
+        plt.text(RMmax*0.5, np.max(P_derot_arr)*0.8, 'FRB191108 \n RMmax~-474')
+#        plt.savefig('FRB191108_RMspectrum.pdf')
         fig=plt.figure()
         extent=[0, 360, inputs.rmmin, inputs.rmmax]
         plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
