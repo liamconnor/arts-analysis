@@ -190,62 +190,47 @@ def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
 
     return Ucal, Vcal, xy_cal, phi_bf
 
-def derotate_faraday(arr_Q, arr_U, pulse_sample=None, pulse_width=1, RMmin=0.0, RMmax=1e4):
-    """ Create complex xy spectrum from U/V. Find phase 
-    such that flucations in V are minimized. Derotate xy 
-    and return calibrated U/V. 
-    """
-    if len(arr_Q.shape)==1 and pulse_sample is None:
-        pulse_sample = np.argmax(np.sqrt(arr_Q**2 + arr_U**2).mean(0))
-
-        if len(arr_Q.shape)==1:
-                arr_Q = arr_Q[None]
-                arr_Q = arr_Q[:, pulse_sample-100:pulse_sample+100] 
-        if len(arr_U.shape)==1:
-                arr_U = arr_U[None]
-                arr_U = arr_U[:, pulse_sample-100:pulse_sample+100]
-
-    arr_Q -= np.median(arr_Q, axis=-1, keepdims=True)
-    arr_U -= np.median(arr_U, axis=-1, keepdims=True)
-
-    P = arr_Q + 1j*arr_U
-
-    phis = np.linspace(-2*np.pi, 2*np.pi, 1000)
-    RMs = np.linspace(-RMmax, RMmax, 50000)
-
-    phase_std = []
-    for rm in RMs:
-        P_rot = P * np.exp(-2j*rm*lam_arr**2)
-        #phase_std.append(np.std(np.angle(P_rot)))
-        phase_std.append(P_rot.real.sum())
-
-    # Assume best fit phase is the one that minimizes 
-    # oscillation in V
-    rm_bf = RMs[np.argmin(np.array(phase_std))]
-    print("Best fit RM:%0.2f" % rm_bf)
-    P_cal = P*np.exp(-2j*rm_bf*lam_arr**2)
-    Qcal, Ucal = P_cal.real, P_cal.imag
-
-    return Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P
-
 def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4, 
-                nrm=5000, nphi=500, mask=None):
+                nrm=5000, nphi=500, mask=None, plot=False):
     """ stokes vec should be (4, NFREQ) array
     """
     phis = np.linspace(0, 2*np.pi, nphi)
     RMs = np.linspace(RMmin, RMmax, nrm)
 
-    P = stokes_vec[1] + 1j*stokes_vec[2]
-    P.real -= np.median(P.real)
-    P.imag -= np.median(P.imag)
 #    P /= stokes_vec[0].reshape(-1, 4).mean(-1).repeat(4)
     if mask is None:
         use_ind = range(NFREQ)
     else:
         use_ind = np.delete(range(NFREQ), mask)
 
+    Ifit = np.poly1d(np.polyfit(freq_arr[use_ind],
+                                stokes_vec[0][use_ind], 10))(freq_arr)
+
+    P = stokes_vec[1] + 1j*stokes_vec[2]
+    P.real[use_ind] -= np.median(P.real[use_ind])
+    P.imag[use_ind] -= np.median(P.imag[use_ind])
+    P /= Ifit
+
     P_derot_arr = []
     P_derot_arr = np.empty([nrm, nphi])
+
+    if plot:
+        fig = plt.figure()
+        plt.subplot(411)
+        plt.plot(freq_arr[use_ind], stokes_vec[0][use_ind],'.')
+        plt.plot(freq_arr[mask], stokes_vec[0][mask],'.')        
+        plt.plot(freq_arr, Ifit, color='k')
+        plt.ylim(Ifit[use_ind].max()*1.1, Ifit[use_ind].min()*0.9)
+        plt.subplot(412)
+        plt.plot(freq_arr[use_ind], P.real[use_ind])
+        plt.plot(freq_arr[mask], P.real[mask],'.')
+        plt.subplot(413)
+        plt.plot(freq_arr[use_ind], P.imag[use_ind])
+        plt.plot(freq_arr[mask], P.imag[mask],'.')
+        plt.subplot(414)
+        plt.plot(freq_arr[use_ind], np.angle(P[use_ind]), color='k')
+        plt.plot(freq_arr[mask], np.angle(P[mask]), '.', color='C1')
+        plt.show()
 
     for ii, rm in enumerate(RMs):
         for jj, phi in enumerate(phis):
@@ -290,9 +275,13 @@ def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 
     plt.show()
 
-def plot_im_raw(arr, pulse_sample=None):
+def plot_im_raw(arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(arr[0].mean(0))
+
+    ntime = arr.shape[-1]
+    arr = arr[..., :ntime//pulse_width*pulse_width]
+    arr = arr.reshape(4, arr.shape[1], -1, pulse_width).mean(-1)
 
     I = arr[0][:, pulse_sample-50:pulse_sample+50]
     Q = arr[1][:, pulse_sample-50:pulse_sample+50]
