@@ -355,7 +355,7 @@ if __name__ == '__main__':
         mask = list(set(mask))
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                           RMmax=inputs.rmmax, nrm=1000, nphi=200, 
-                                          mask=mask, plot=True)
+                                          mask=mask, plot=inputs.mk_plot)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
 
         if inputs.mk_plot:
