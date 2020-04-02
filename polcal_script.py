@@ -227,7 +227,7 @@ if __name__ == '__main__':
     if inputs.dada or inputs.All:
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
-#        print("Converting dada into numpy for %s" % fndada)
+       print("Converting dada into numpy for %s" % fndada)
 #        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
         if inputs.polcal:
             fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
@@ -281,6 +281,8 @@ if __name__ == '__main__':
                                     dedisp_data_path=dedisp_data_path, DM=DM)
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
+
+    assert stokes_arr, 'stokes_arr not defined'
 
     if inputs.mk_plot or inputs.All:
         try:
