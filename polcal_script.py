@@ -312,12 +312,14 @@ if __name__ == '__main__':
                                     plot=inputs.mk_plot, clean=True)
 
     if inputs.mk_plot:
-        mk_pol_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
-                pulse_sample=pulse_sample, pulse_width=8)
+        plot_all(stokes_arr, suptitle='Uncalibrated')
+        # mk_pol_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
+        #         pulse_sample=pulse_sample, pulse_width=8)
         try:
            stokes_arr_cal
-           mk_pol_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
-                   pulse_sample=pulse_sample, pulse_width=8)
+           plot_all(stokes_arr_cal, suptitle='xy-Calibrated')
+           # mk_pol_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
+           #         pulse_sample=pulse_sample, pulse_width=8)
         except NameError:
            print("Cannot plot calibrated data if there is no stokes_arr_cal")
 
