@@ -227,7 +227,7 @@ if __name__ == '__main__':
     if inputs.dada or inputs.All:
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
-       print("Converting dada into numpy for %s" % fndada)
+        print("Converting dada into numpy for %s" % fndada)
 #        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
         if inputs.polcal:
             fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
