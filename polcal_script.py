@@ -130,35 +130,50 @@ def check_dirs(fdir):
         print('Making empty dada dir')
         os.mkdir(fdir+'/dada/')        
 
-def plot_RMspectrum():
-        fig=plt.figure()
-        plt.plot(RMs, np.max(P_derot_arr, axis=-1))
-        plt.ylabel('Defaraday amplitude', fontsize=16)
-        plt.xlabel(r'RM (rad m$^{-2}$)', fontsize=16)
-        plt.axvline(RMmax, color='r', linestyle='--')
-        plt.text(RMmax*0.5, np.max(P_derot_arr)*0.8, '%s \n RMmax~%d' % (obs_name, RMmax))
-#        plt.savefig('FRB191108_RMspectrum.pdf')
-        fig=plt.figure()
-        extent=[0, 360, inputs.rmmin, inputs.rmmax]
-#        plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
-#                   vmin=P_derot_arr.max()*0.5, extent=extent)
-#        plt.xlabel('Phi (deg)', fontsize=16)
-#        plt.ylabel('RM (rad m**-2)', fontsize=16)
+def plot_RMspectrum(RMs, P_derot_arr, RMmax, 
+                    phimax, derot_phase, fn_fig=None):
+    fig=plt.figure()
+    plt.plot(RMs, np.max(P_derot_arr, axis=-1))
+    plt.ylabel('Defaraday amplitude', fontsize=16)
+    plt.xlabel(r'RM (rad m$^{-2}$)', fontsize=16)
+    plt.axvline(RMmax, color='r', linestyle='--')
+    plt.text(RMmax*0.5, np.max(P_derot_arr)*0.8, '%s \n RMmax~%d' % (obs_name, RMmax))
+    fig=plt.figure()
+    extent=[0, 360, inputs.rmmin, inputs.rmmax]
+    plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
+              vmin=P_derot_arr.max()*0.5, extent=extent)
+    plt.xlabel('Phi (deg)', fontsize=16)
+    plt.ylabel('RM (rad m**-2)', fontsize=16)
 
+    if fn_fig is not None:
+        plt.savefig(fn_fig)
 
-def plot_all(stoke_arr):
-        print(stokes_arr.shape)
-        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)[..., pulse_sample-500:pulse_sample+500]
-        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4, 1536//16, -1, 5).mean(-1)
-        plt.subplot(221)
-        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
-        plt.subplot(222)
-        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
-        plt.subplot(223)
-        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
-        plt.subplot(224)
-        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
-        plt.show()
+def plot_all(stoke_arr, suptitle=''):
+    stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4,96,-1,5).mean(-1)
+    plt.subplot(421)
+    plt.plot(stokes_arr_[0].mean(0))
+    plt.ylabel('I')
+    plt.subplot(422)
+    plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
+    plt.subplot(423)
+    plt.plot(stokes_arr_[1].mean(0))
+    plt.ylabel('Q')
+    plt.subplot(424)
+    plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
+    plt.subplot(425)
+    plt.plot(stokes_arr_[2].mean(0))
+    plt.ylabel('U')
+    plt.subplot(426)
+    plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
+    plt.subplot(427)
+    plt.plot(stokes_arr_[3].mean(0))
+    plt.ylabel('V')
+    plt.subplot(428)
+    plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
+    plt.xlabel('Time (samples)')
+    plt.suptitle(suptitle)
+    plt.plot()
 
 
 def mk_pol_plot(stokes_arr, pulse_sample=None, pulse_width=1):
@@ -317,6 +332,9 @@ if __name__ == '__main__':
         pulse_sample = np.argmax(stokes_vec[0].mean(0))
         stokes_vec = stokes_vec[..., pulse_sample]
 
+        if inputs.plot:
+            plot_all(stoke_arr, suptitle='Uncalibrated')
+
         if not inputs.polcal:
             Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], stokes_vec[3])
             stokes_vec[2] = Ucal
@@ -334,58 +352,19 @@ if __name__ == '__main__':
                                           RMmax=inputs.rmmax, nrm=1000, nphi=200, 
                                           mask=mask, plot=True)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
+
+        if inputs.plot:
+            plot_RMspectrum(RMs, P_derot_arr, RMmax, 
+                            phimax, derot_phase, 
+                            fn_fig='%s_RMspectrum.pdf' % obs_name)
+
         print(RMmax, phimax)
-        print(stokes_arr.shape)
-        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)[..., pulse_sample-500:pulse_sample+500]
-        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4, 1536//16, -1, 5).mean(-1)
-        plt.subplot(221)
-        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
-        plt.subplot(222)
-        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
-        plt.subplot(223)
-        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
-        plt.subplot(224)
-        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
-        plt.show()
-        print(stokes_arr.shape)
-        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)[..., pulse_sample-500:pulse_sample+500]
-        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4, 1536//16, -1, 5).mean(-1)
-        plt.subplot(221)
-        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
-        plt.subplot(222)
-        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
-        plt.subplot(223)
-        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
-        plt.subplot(224)
-        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
-        plt.show()
+
         Pcal = (stokes_arr[1]+1j*stokes_arr[2])*derot_phase[:, None]
         stokes_arr[1], stokes_arr[2] = Pcal.real, Pcal.imag
-        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)
-        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4,96,-1,5).mean(-1)
-        plt.subplot(421)
-        plt.plot(stokes_arr_[0].mean(0))
-        plt.ylabel('I')
-        plt.subplot(422)
-        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
-        plt.subplot(423)
-        plt.plot(stokes_arr_[1].mean(0))
-        plt.ylabel('Q')
-        plt.subplot(424)
-        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
-        plt.subplot(425)
-        plt.plot(stokes_arr_[2].mean(0))
-        plt.ylabel('U')
-        plt.subplot(426)
-        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
-        plt.subplot(427)
-        plt.plot(stokes_arr_[3].mean(0))
-        plt.ylabel('V')
-        plt.subplot(428)
-        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
-        plt.xlabel('Time (samples)')
-        plt.plot()
-        plt.show()
+
+        if inputs.plot:
+            plot_all(stoke_arr, suptitle='Faraday derotated')
 
 
 
