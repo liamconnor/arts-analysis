@@ -233,7 +233,6 @@ if __name__ == '__main__':
             fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
             outdir = inputs.basedir+'/polcal/'
             os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
-            
 
     try:
         params = glob.glob(inputs.basedir+'/numpyarr/DM*txt')[0]
@@ -282,7 +281,11 @@ if __name__ == '__main__':
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
-    assert stokes_arr, 'stokes_arr not defined'
+    try:
+        stokes_arr
+    except:
+        print('stokes_arr not defined')
+        exit()
 
     if inputs.mk_plot or inputs.All:
         try:
