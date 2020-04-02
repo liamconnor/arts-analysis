@@ -328,7 +328,7 @@ if __name__ == '__main__':
         try:
             stokes_vec = stokes_arr_cal
         except:
-            print("Using uncalibrated data")
+            print('Using uncalibrated data')
             stokes_vec = stokes_arr
 
         ntime = stokes_vec.shape[-1]
@@ -349,7 +349,7 @@ if __name__ == '__main__':
             XY *= np.exp(-1j*phi_xy)
             stokes_arr[2], stokes_arr[3] = XY.real, XY.imag
 
-        print("Rebinning in time by %d" % width_max)
+        print('Rebinning in time by %d' % width_max)
         mask = list(np.where(stokes_vec[0]==0)[0])
 #        mask += range(0,700)
         mask = list(set(mask))
@@ -363,7 +363,7 @@ if __name__ == '__main__':
                             phimax, derot_phase, 
                             fn_fig='%s_RMspectrum.pdf' % obs_name)
 
-        print(RMmax, phimax)
+        print('Maximum likelihood RM: %0.2f' % RMmax)
 
         Pcal = (stokes_arr[1]+1j*stokes_arr[2])*derot_phase[:, None]
         stokes_arr[1], stokes_arr[2] = Pcal.real, Pcal.imag
