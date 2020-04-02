@@ -337,7 +337,7 @@ if __name__ == '__main__':
         pulse_sample = np.argmax(stokes_vec[0].mean(0))
         stokes_vec = stokes_vec[..., pulse_sample]
 
-        if inputs.plot:
+        if inputs.mk_plot:
             plot_all(stoke_arr, suptitle='Uncalibrated')
 
         if not inputs.polcal:
@@ -358,7 +358,7 @@ if __name__ == '__main__':
                                           mask=mask, plot=True)
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
 
-        if inputs.plot:
+        if inputs.mk_plot:
             plot_RMspectrum(RMs, P_derot_arr, RMmax, 
                             phimax, derot_phase, 
                             fn_fig='%s_RMspectrum.pdf' % obs_name)
@@ -368,7 +368,7 @@ if __name__ == '__main__':
         Pcal = (stokes_arr[1]+1j*stokes_arr[2])*derot_phase[:, None]
         stokes_arr[1], stokes_arr[2] = Pcal.real, Pcal.imag
 
-        if inputs.plot:
+        if inputs.mk_plot:
             plot_all(stoke_arr, suptitle='Faraday derotated')
 
 
