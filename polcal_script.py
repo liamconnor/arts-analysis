@@ -1,4 +1,4 @@
-import os 
+import os
 
 import numpy as np
 import matplotlib.pylab as plt
@@ -16,10 +16,13 @@ transpose = False
 SNRtools = tools.SNR_Tools()
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
+    print(dedisp_data_path)
     if os.path.exists(dedisp_data_path):
         print("Reading %s in directly" % dedisp_data_path)
         stokes_arr = np.load(dedisp_data_path)
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
+        stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
+        pulse_sample = 500
     else:
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
                                                    rebin_time=rebin_time, 
@@ -109,32 +112,6 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
 
     return stokes_arr_cal
 
-def plot_xy_corr(data):
-    if mk_plot and xy_correct:
-        ext = [0, len(data[0,0])*1000/50.*pol.dt*1e3, 
-               freq_arr.min(), freq_arr.max()]
-        labels = ['Stokes I', 'Stokes Q', 'Stokes U', 'Stokes V']
-        # Rebin in frequency and time
-        Ispec = Ispec.reshape(-1, 16).mean(1)
-        data = data[..., :data.shape[-1]//pulse_width*pulse_width]
-        data = data.reshape(4, data.shape[1]//16, 16, 
-                            data.shape[-1]//pulse_width, 
-                            pulse_width).mean(2).mean(-1)
-        for ii in range(4):
-            plt.subplot(2,2,ii+1)
-            data_med = np.median(data[ii],keepdims=True,axis=1)
-            plt.imshow((data[ii]-data_med)/Ispec[:,None], 
-                       aspect='auto', extent=ext)
-            plt.text(50, 1480, labels[ii], color='white', fontsize=12)
-            if ii%2==0:
-                plt.ylabel('Freq (MHz)')
-            plt.yticks([1500, 1400, 1300])  
-            if ii>1:
-                plt.xlabel('Time (ms)')
-            plt.xlim(600, 1000)
-        plt.show()
-        exit()
-
 def check_dirs(fdir):
     """ Expecting: 
     fdir/numpyarr
@@ -153,7 +130,38 @@ def check_dirs(fdir):
         print('Making empty dada dir')
         os.mkdir(fdir+'/dada/')        
 
-def mk_plot(stokes_arr, pulse_sample=None, pulse_width=1):
+def plot_RMspectrum():
+        fig=plt.figure()
+        plt.plot(RMs, np.max(P_derot_arr, axis=-1))
+        plt.ylabel('Defaraday amplitude', fontsize=16)
+        plt.xlabel(r'RM (rad m$^{-2}$)', fontsize=16)
+        plt.axvline(RMmax, color='r', linestyle='--')
+        plt.text(RMmax*0.5, np.max(P_derot_arr)*0.8, '%s \n RMmax~%d' % (obs_name, RMmax))
+#        plt.savefig('FRB191108_RMspectrum.pdf')
+        fig=plt.figure()
+        extent=[0, 360, inputs.rmmin, inputs.rmmax]
+#        plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
+#                   vmin=P_derot_arr.max()*0.5, extent=extent)
+#        plt.xlabel('Phi (deg)', fontsize=16)
+#        plt.ylabel('RM (rad m**-2)', fontsize=16)
+
+
+def plot_all(stoke_arr):
+        print(stokes_arr.shape)
+        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)[..., pulse_sample-500:pulse_sample+500]
+        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4, 1536//16, -1, 5).mean(-1)
+        plt.subplot(221)
+        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
+        plt.subplot(222)
+        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
+        plt.subplot(223)
+        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
+        plt.subplot(224)
+        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
+        plt.show()
+
+
+def mk_pol_plot(stokes_arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     pol.plot_im_raw(stokes_arr, pulse_sample=pulse_sample, pulse_width=pulse_width)
@@ -167,37 +175,35 @@ if __name__ == '__main__':
                         type=str, required=True)
     parser.add_argument('-A', '--All', 
                         help='Do every step in the pipeline', action='store_true')
-    parser.add_argument('-p', '--polcal', 
-                        help='generate iquv array', action='store_true')
-    parser.add_argument('-g', '--gen_arr', 
-                        help='generate iquv array', action='store_true')
-    parser.add_argument('-F', '--faraday', 
-                        help='Faraday fit and de-rotate', 
+    parser.add_argument('-dd', '--dada', 
+                        help='generate numpy files from dada',
                         action='store_true')
     parser.add_argument('-sb', '--gen_sb', 
                         help='generate SB from npy files', 
                         action='store_true')
-    parser.add_argument('-dd', '--dada', 
-                        help='generate numpy files from dada',
+    parser.add_argument('-g', '--gen_arr', 
+                        help='generate iquv array', action='store_true')
+    parser.add_argument('-pc', '--polcal', 
+                        help='generate iquv array', action='store_true')
+    parser.add_argument('-c', '--calibrate_frb', 
+                        help='use non-switch polcal solution to cal FRB', 
                         action='store_true')
-    parser.add_argument('-pd', '--plot_dedisp', 
+    parser.add_argument('-F', '--faraday', 
+                        help='Faraday fit and de-rotate', 
+                        action='store_true')
+    parser.add_argument('-p', '--mk_plot', 
                         help='plot 1D stokes data in time', 
                         action='store_true')
     parser.add_argument('-ps', '--plot_stokes', 
                         help='plot 2D stokes data', 
                         action='store_true')
-    parser.add_argument('-c', '--calibrate_frb', 
-                        help='use non-switch polcal solution to cal FRB', 
-                        action='store_true')
-    parser.add_argument('-pw', '--pulse_width', help='', 
-                        default=1, type=int)
-    parser.add_argument('-src', '--src', help='source name', 
+    parser.add_argument('-src', '--src', help='calibrator source name', 
                         default='3C286', type=str)
     parser.add_argument('-rmmin', '--rmmin', help='min RM to search', 
                         default=-1e4, type=float)
     parser.add_argument('-rmmax', '--rmmax', help='max RM to search', 
                         default=1e4, type=float)
-
+    
     inputs = parser.parse_args()
     obs_name = inputs.basedir.split('/')[4]
 
@@ -231,7 +237,7 @@ if __name__ == '__main__':
         if inputs.polcal or inputs.All:
             folder_polcal = inputs.basedir+'/polcal/'
             pol.sb_from_npy(folder_polcal, sb=35, off_src=False)
-            #hack pol.sb_from_npy(folder_polcal, sb=35, off_src=True)
+            pol.sb_from_npy(folder_polcal, sb=35, off_src=True)
 
         folder = inputs.basedir+'/numpyarr/'
         pol.sb_from_npy(folder, sb=SB, off_src=False)
@@ -247,23 +253,28 @@ if __name__ == '__main__':
         print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
         flist_sb = glob.glob(dpath)
-        if len(flist_sb)==0:
+        if len(flist_sb)==-1:
             print("No SB data, cannot generate stokes array")
         else:
             dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
+
+            if not os.path.exists(dedisp_data_path):
+                fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
+                dedisp_data_path = glob.glob(fn_dedisp)[0]
+
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM)
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
-    if inputs.plot_dedisp or inputs.All:
+    if inputs.mk_plot or inputs.All:
         try:
            stokes_arr
         except NameError:
            print("Cannot plot data if there is no stokes array")
            exit()
         plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
-                    pulse_width=inputs.pulse_width)
+                    pulse_width=width_max)
 
     if inputs.calibrate_frb or inputs.All:
         try:
@@ -278,14 +289,14 @@ if __name__ == '__main__':
         stokes_arr_cal = bandpass_correct(stokes_arr, fn_bandpass)
         print("Calibrating xy correlation with %s" % inputs.src)
         stokes_arr_cal = xy_correct(stokes_arr_cal, fn_xy_phase, 
-                                    plot=True, clean=True)
+                                    plot=inputs.mk_plot, clean=True)
 
-    if inputs.plot_stokes or inputs.All:
-        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
+    if inputs.mk_plot:
+        mk_pol_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
                 pulse_sample=pulse_sample, pulse_width=8)
         try:
            stokes_arr_cal
-           mk_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
+           mk_pol_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
                    pulse_sample=pulse_sample, pulse_width=8)
         except NameError:
            print("Cannot plot calibrated data if there is no stokes_arr_cal")
@@ -305,16 +316,28 @@ if __name__ == '__main__':
         stokes_vec = stokes_vec.reshape(4, 1536, -1, width_max).mean(-1)
         pulse_sample = np.argmax(stokes_vec[0].mean(0))
         stokes_vec = stokes_vec[..., pulse_sample]
-        Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], stokes_vec[3])
-        stokes_vec[2] = Ucal
-        stokes_vec[3] = Vcal
 
-        U,V = stokes_arr[2], stokes_arr[3]
-        XY = U+1j*V
-        XY *= np.exp(-1j*phi_xy)
-        stokes_arr[2], stokes_arr[3] = XY.real, XY.imag
-        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)
-        stokes_arr_ = stokes_arr_.reshape(4, 1536//16, -1, 5).mean(-1)
+        if not inputs.polcal:
+            Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], stokes_vec[3])
+            stokes_vec[2] = Ucal
+            stokes_vec[3] = Vcal
+            U,V = stokes_arr[2], stokes_arr[3]
+            XY = U+1j*V
+            XY *= np.exp(-1j*phi_xy)
+            stokes_arr[2], stokes_arr[3] = XY.real, XY.imag
+
+        print("Rebinning in time by %d" % width_max)
+        mask = list(np.where(stokes_vec[0]==0)[0])
+#        mask += range(0,700)
+        mask = list(set(mask))
+        results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
+                                          RMmax=inputs.rmmax, nrm=1000, nphi=200, 
+                                          mask=mask, plot=True)
+        RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
+        print(RMmax, phimax)
+        print(stokes_arr.shape)
+        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)[..., pulse_sample-500:pulse_sample+500]
+        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4, 1536//16, -1, 5).mean(-1)
         plt.subplot(221)
         plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
         plt.subplot(222)
@@ -324,32 +347,44 @@ if __name__ == '__main__':
         plt.subplot(224)
         plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
         plt.show()
-        mk_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
-                pulse_sample=pulse_sample, pulse_width=8)
-
-        print("Rebinning in time by %d" % width_max)
-        mask = list(np.where(stokes_vec[0]==0)[0])
-        mask += range(0,700)
-        mask = list(set(mask))
-        np.save('./text', stokes_vec)
-        results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
-                                          RMmax=inputs.rmmax, nrm=1000, nphi=200, 
-                                          mask=mask, plot=True)
-        RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
-        print(RMmax, phimax)
-        fig=plt.figure()
-        plt.plot(RMs, np.max(P_derot_arr, axis=-1))
-        plt.ylabel('Defaraday amplitude', fontsize=16)
-        plt.xlabel(r'RM (rad m$^{-2}$)', fontsize=16)
-        plt.axvline(RMmax, color='r', linestyle='--')
-        plt.text(RMmax*0.5, np.max(P_derot_arr)*0.8, 'FRB191108 \n RMmax~-474')
-#        plt.savefig('FRB191108_RMspectrum.pdf')
-        fig=plt.figure()
-        extent=[0, 360, inputs.rmmin, inputs.rmmax]
-        plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
-                   vmin=P_derot_arr.max()*0.5, extent=extent)
-        plt.xlabel('Phi (deg)', fontsize=16)
-        plt.ylabel('RM (rad m**-2)', fontsize=16)
+        print(stokes_arr.shape)
+        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)[..., pulse_sample-500:pulse_sample+500]
+        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4, 1536//16, -1, 5).mean(-1)
+        plt.subplot(221)
+        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
+        plt.subplot(222)
+        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
+        plt.subplot(223)
+        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
+        plt.subplot(224)
+        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
+        plt.show()
+        Pcal = (stokes_arr[1]+1j*stokes_arr[2])*derot_phase[:, None]
+        stokes_arr[1], stokes_arr[2] = Pcal.real, Pcal.imag
+        stokes_arr_ = stokes_arr.reshape(4, 1536//16, 16, -1).mean(2)
+        stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4,96,-1,5).mean(-1)
+        plt.subplot(421)
+        plt.plot(stokes_arr_[0].mean(0))
+        plt.ylabel('I')
+        plt.subplot(422)
+        plt.imshow(stokes_arr_[0]-stokes_arr_[0].mean(-1)[:, None], aspect='auto')
+        plt.subplot(423)
+        plt.plot(stokes_arr_[1].mean(0))
+        plt.ylabel('Q')
+        plt.subplot(424)
+        plt.imshow(stokes_arr_[1]-stokes_arr_[1].mean(-1)[:, None], aspect='auto')
+        plt.subplot(425)
+        plt.plot(stokes_arr_[2].mean(0))
+        plt.ylabel('U')
+        plt.subplot(426)
+        plt.imshow(stokes_arr_[2]-stokes_arr_[2].mean(-1)[:, None], aspect='auto')
+        plt.subplot(427)
+        plt.plot(stokes_arr_[3].mean(0))
+        plt.ylabel('V')
+        plt.subplot(428)
+        plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
+        plt.xlabel('Time (samples)')
+        plt.plot()
         plt.show()
 
 

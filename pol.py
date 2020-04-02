@@ -74,7 +74,6 @@ def sb_from_npy(folder, sb=35, off_src=False):
     # get sb map                                                                                         
     sbgen = SBGenerator.from_science_case(4)
     sbmap = sbgen.get_map(sb)
-    print(folder)
     # read first file to get shape                                                                       
     shape = np.load('{}/stokesI_tab00.npy'.format(folder)).shape
     
@@ -184,7 +183,6 @@ def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
     # Assume best fit phase is the one that minimizes 
     # oscillation in V
     phi_bf = phis[np.argmin(np.array(phase_std))]
-    print(phi_bf)
     xy_cal = xy_pulse*np.exp(-1j*phi_bf)
     Ucal, Vcal = xy_cal.real, xy_cal.imag
 
