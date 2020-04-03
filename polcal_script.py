@@ -278,9 +278,14 @@ if __name__ == '__main__':
             # if not os.path.exists(dedisp_data_path):
             #     fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
             #     dedisp_data_path = glob.glob(fn_dedisp)[0]
+            fnmask = inputs.basedir+'/numpyarr/rfimask'
+            
+            if not os.path.exists(fnmask):
+                rfimask = True
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
-                                    dedisp_data_path=dedisp_data_path, DM=DM)
+                                    dedisp_data_path=dedisp_data_path, DM=DM, 
+                                    RFI_clean=rfimask)
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
