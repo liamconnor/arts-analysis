@@ -56,8 +56,6 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     
-    pulse_sample /= pulse_width
-
     plt.subplot(211)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
@@ -146,7 +144,7 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
               vmin=P_derot_arr.max()*0.5, extent=extent)
     plt.xlabel('Phi (deg)', fontsize=16)
     plt.ylabel('RM (rad m**-2)', fontsize=16)
-    plt.show()
+    plt.show
 
 
 def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
