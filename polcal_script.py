@@ -138,6 +138,8 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
     plt.xlabel(r'RM (rad m$^{-2}$)', fontsize=16)
     plt.axvline(RMmax, color='r', linestyle='--')
     plt.text(RMmax*0.5, np.max(P_derot_arr)*0.8, '%s \n RMmax~%d' % (obs_name, RMmax))
+    if fn_fig is not None:
+        plt.savefig(fn_fig)
     fig=plt.figure()
     extent=[0, 360, inputs.rmmin, inputs.rmmax]
     plt.imshow(P_derot_arr, aspect='auto', vmax=P_derot_arr.max(), 
@@ -145,8 +147,6 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
     plt.xlabel('Phi (deg)', fontsize=16)
     plt.ylabel('RM (rad m**-2)', fontsize=16)
 
-    if fn_fig is not None:
-        plt.savefig(fn_fig)
 
 def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
@@ -374,6 +374,7 @@ if __name__ == '__main__':
         mask = list(np.where(stokes_vec[0]==0)[0])
 #        mask += range(0,700)
         mask = list(set(mask))
+        print(mask)
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                           RMmax=inputs.rmmax, nrm=1000, nphi=200, 
                                           mask=mask, plot=inputs.mk_plot)
