@@ -20,7 +20,7 @@ rebin_time=1
 rebin_freq=1
 
 def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, 
-                  DM=0.0, trans=True, RFI_clean=False):
+                  DM=0.0, trans=True, RFI_clean=None):
     """ Read in all 4 arrays, dedisperse, 
     return list with median-subtracted, rebinned 
     [arr_I, arr_Q, arr_U, arr_V]
@@ -38,6 +38,12 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
     flist.sort() # should be IQUV ordered now
     arr_list = []
 
+    if type(RFI_clean)==str:
+        mask = np.loadtxt(RFI_clean)
+        RFI_clean = True
+    else:
+        mask = []
+
     for ii, fn in enumerate(flist):
         print("Assuming %s is Stokes %s" % (fn, stokes_ps[ii]))
         arr = np.load(fn)
@@ -50,12 +56,14 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
 
         if RFI_clean:
             arr = tools.cleandata(arr, clean_type='perchannel')
+            arr[mask] = 0.0
 
         arr = tools.dedisperse(arr, DM, freq=freq)[:, :last_ind]
         nt, nf = arr.shape[-1], arr.shape[0]
 #        arr = arr - np.median(arr, axis=-1, keepdims=True)
         arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
-        arr = arr.reshape(nf//rebin_freq, rebin_freq, nt//rebin_time, rebin_time).mean(1).mean(-1)
+        arr = arr.reshape(nf//rebin_freq, rebin_freq, 
+                          nt//rebin_time, rebin_time).mean(1).mean(-1)
         arr_list.append(arr)
 
     pulse_sample = np.argmax(arr_list[0].mean(0))

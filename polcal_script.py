@@ -15,7 +15,7 @@ pulse_width = 1 # number of samples to sum over
 transpose = False
 SNRtools = tools.SNR_Tools()
 
-def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
+def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
     print(dedisp_data_path)
     if os.path.exists(dedisp_data_path):
         print("Reading %s in directly" % dedisp_data_path)
@@ -29,7 +29,7 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0):
                                                    rebin_freq=rebin_freq, 
                                                    DM=DM, 
                                                    trans=False,
-                                                   RFI_clean=True)
+                                                   RFI_clean=rfimask)
         stokes_arr = np.concatenate(arr_list, axis=0)
         stokes_arr = stokes_arr.reshape(4, pol.NFREQ//rebin_freq, -1)
 
@@ -377,7 +377,7 @@ if __name__ == '__main__':
         stokes_arr[1], stokes_arr[2] = Pcal.real, Pcal.imag
 
         if inputs.mk_plot:
-            plot_all(stoke_arr, suptitle='Faraday derotated')
+            plot_all(stokes_arr, suptitle='Faraday derotated', fds=inputs.freq_downsample)
 
 
 
