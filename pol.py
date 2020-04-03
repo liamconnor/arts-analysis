@@ -39,7 +39,7 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
     arr_list = []
 
     if type(RFI_clean)==str:
-        mask = np.loadtxt(RFI_clean)
+        mask = (np.loadtxt(RFI_clean)).astype(int)
         RFI_clean = True
     else:
         mask = []
