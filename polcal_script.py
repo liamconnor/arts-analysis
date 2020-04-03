@@ -148,9 +148,10 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
     if fn_fig is not None:
         plt.savefig(fn_fig)
 
-def plot_all(stoke_arr, suptitle='', fds=16):
-    stokes_arr_ = stokes_arr.reshape(4, 1536//fds, fds, -1).mean(2)
-    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//5*5].reshape(4,96,-1,5).mean(-1)
+def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
+    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
     plt.subplot(421)
     plt.plot(stokes_arr_[0].mean(0))
     plt.ylabel('I')
@@ -220,6 +221,8 @@ if __name__ == '__main__':
                         default=1e4, type=float)
     parser.add_argument('-fds', '--freq_downsample', help='downsample in freq', 
                         default=16, type=int)
+    parser.add_argument('-tds', '--time_downsample', help='downsample in freq', 
+                        default=1, type=int)
 
     
     inputs = parser.parse_args()
@@ -325,13 +328,13 @@ if __name__ == '__main__':
 
     if inputs.mk_plot:
         plot_all(stokes_arr, suptitle='Uncalibrated', 
-                 fds=inputs.freq_downsample)
+                 fds=inputs.freq_downsample, tds=inputs.time_downsample)
         # mk_pol_plot(stokes_arr.reshape(4, 1536//16, 16, -1).mean(2),
         #         pulse_sample=pulse_sample, pulse_width=8)
         try:
            stokes_arr_cal
            plot_all(stokes_arr_cal, suptitle='xy-Calibrated', 
-                    fds=inputs.freq_downsample)
+                    fds=inputs.freq_downsample, tds=inputs.time_downsample)
            # mk_pol_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
            #         pulse_sample=pulse_sample, pulse_width=8)
         except NameError:
@@ -355,7 +358,8 @@ if __name__ == '__main__':
 
         if inputs.mk_plot:
             plot_all(stokes_arr, suptitle='Uncalibrated', 
-                     fds=inputs.freq_downsample)
+                     fds=inputs.freq_downsample, 
+                     tds=inputs.time_downsample)
 
         if not inputs.polcal:
             Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], stokes_vec[3])
@@ -386,7 +390,8 @@ if __name__ == '__main__':
         stokes_arr[1], stokes_arr[2] = Pcal.real, Pcal.imag
 
         if inputs.mk_plot:
-            plot_all(stokes_arr, suptitle='Faraday derotated', fds=inputs.freq_downsample)
+            plot_all(stokes_arr, suptitle='Faraday derotated', 
+                     fds=inputs.freq_downsample, tds=inputs.time_downsample)
 
 
 
