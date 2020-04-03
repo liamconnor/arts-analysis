@@ -275,9 +275,9 @@ if __name__ == '__main__':
         else:
             dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
 
-            if not os.path.exists(dedisp_data_path):
-                fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
-                dedisp_data_path = glob.glob(fn_dedisp)[0]
+            # if not os.path.exists(dedisp_data_path):
+            #     fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
+            #     dedisp_data_path = glob.glob(fn_dedisp)[0]
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM)
