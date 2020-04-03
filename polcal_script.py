@@ -146,6 +146,7 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
               vmin=P_derot_arr.max()*0.5, extent=extent)
     plt.xlabel('Phi (deg)', fontsize=16)
     plt.ylabel('RM (rad m**-2)', fontsize=16)
+    plt.show()
 
 
 def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
