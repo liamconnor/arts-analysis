@@ -281,13 +281,15 @@ if __name__ == '__main__':
             fnmask = inputs.basedir+'/numpyarr/rfimask'
 
             if not os.path.exists(fnmask):
+                # There is no rfimask file, but will do rfi cleaning
                 rfimask = True
             else:
+                # Mask out certain channels
                 rfimask = fnmask
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM, 
-                                    RFI_clean=rfimask)
+                                    rfimask=rfimask)
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
