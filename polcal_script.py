@@ -279,9 +279,11 @@ if __name__ == '__main__':
             #     fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
             #     dedisp_data_path = glob.glob(fn_dedisp)[0]
             fnmask = inputs.basedir+'/numpyarr/rfimask'
-            
+
             if not os.path.exists(fnmask):
                 rfimask = True
+            else:
+                rfimask = fnmask
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM, 
