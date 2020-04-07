@@ -191,7 +191,7 @@ def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
     plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
     plt.xlabel('Time (samples)')
     plt.suptitle(suptitle)
-    plt.plot()
+    plt.show()
 
 
 def mk_pol_plot(stokes_arr, pulse_sample=None, pulse_width=1):
@@ -251,7 +251,7 @@ if __name__ == '__main__':
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
         print("Converting dada into numpy for %s" % fndada)
-#        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
         if inputs.polcal:
             fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
             outdir = inputs.basedir+'/polcal/'
