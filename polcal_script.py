@@ -23,6 +23,9 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
         stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
         pulse_sample = 500
+        if type(rfimask)==str:
+            mask = np.loadtxt(rfimask).astype(int)
+            stokes_arr[:, mask] = 0.0
     else:
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
                                                    rebin_time=rebin_time, 
@@ -37,6 +40,10 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
             stokes_arr_small = stokes_arr[:, :, 
                                 pulse_sample-500:pulse_sample+500]
             np.save(dedisp_data_path, stokes_arr_small)
+
+    for ii in range(4):
+        ind = np.where(stokes_arr[ii]!=0)[0]
+        stokes_arr[ii] /= np.std(stokes_arr[ii][ind])
 
     return stokes_arr, pulse_sample
 
@@ -56,12 +63,20 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     
+    I = stokes_arr[0]-stokes_arr[0].mean(-1)[:, None]
+    Q = stokes_arr[1]-stokes_arr[1].mean(-1)[:, None]
+    U = stokes_arr[2]-stokes_arr[2].mean(-1)[:, None]
+    V = stokes_arr[3]-stokes_arr[3].mean(-1)[:, None]
+    Ptotal = np.sqrt(Q**2 + U**2 + V**2).mean(0)
+    Ptotal -= np.median(Ptotal)
+
     plt.subplot(211)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
     plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
-    plt.legend(['I', 'Q', 'U', 'V'])
+    plt.plot(Ptotal,'--',color='k')
+    plt.legend(['I', 'Q', 'U', 'V', 'Pol total'])
     plt.subplot(212)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
@@ -144,10 +159,13 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
               vmin=P_derot_arr.max()*0.5, extent=extent)
     plt.xlabel('Phi (deg)', fontsize=16)
     plt.ylabel('RM (rad m**-2)', fontsize=16)
-    plt.show
+    plt.show()
 
 
 def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
+    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
     stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
@@ -380,6 +398,7 @@ if __name__ == '__main__':
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
 
         if inputs.mk_plot:
+            print("Attemping to plot")
             plot_RMspectrum(RMs, P_derot_arr, RMmax, 
                             phimax, derot_phase, 
                             fn_fig='%s_RMspectrum.pdf' % obs_name)
