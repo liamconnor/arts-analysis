@@ -299,21 +299,23 @@ if __name__ == '__main__':
         print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
         flist_sb = glob.glob(dpath)
-        if len(flist_sb)==4:
-            stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
-                                    dedisp_data_path=dedisp_data_path, DM=DM, 
-                                    rfimask=rfimask)
+        dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
 
-            snr_max, width_max = get_width(stokes_arr[0].mean(0))
+        if len(flist_sb)==-1:
+            pass
         else:
-            dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
-
             if not os.path.exists(dedisp_data_path):
                  fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
                  try:
                      dedisp_data_path = glob.glob(fn_dedisp)[0]
                  except:
-                     pass 
+                     dedisp_data_path = None 
+
+            stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
+                                    dedisp_data_path=dedisp_data_path, DM=DM, 
+                                    rfimask=rfimask)
+
+            snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
     try:
         stokes_arr
