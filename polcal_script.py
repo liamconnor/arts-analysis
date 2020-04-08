@@ -10,14 +10,11 @@ import tools
 import pol
 
 freq_arr = pol.freq_arr
-rebin_time = 1
-rebin_freq = 1
 pulse_width = 1 # number of samples to sum over
 transpose = False
 SNRtools = tools.SNR_Tools()
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
-    print(dedisp_data_path)
     if os.path.exists(dedisp_data_path):
         print("Reading %s in directly" % dedisp_data_path)
         stokes_arr = np.load(dedisp_data_path)
@@ -27,15 +24,16 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
         if type(rfimask)==str:
             mask = np.loadtxt(rfimask).astype(int)
             stokes_arr[:, mask] = 0.0
+    elif len(glob.glob(dedisp_data_path)[0])==0:
+        print("Found one! %s" % )
     else:
+        print("No dedispersed file, using %s" % dpath)
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
-                                                   rebin_time=rebin_time, 
-                                                   rebin_freq=rebin_freq, 
                                                    DM=DM, 
                                                    trans=False,
                                                    RFI_clean=rfimask)
         stokes_arr = np.concatenate(arr_list, axis=0)
-        stokes_arr = stokes_arr.reshape(4, pol.NFREQ//rebin_freq, -1)
+        stokes_arr = stokes_arr.reshape(4, pol.NFREQ, -1)
 
         if type(dedisp_data_path)==str:
             stokes_arr_small = stokes_arr[:, :, 
@@ -291,17 +289,6 @@ if __name__ == '__main__':
                                                         save_sol=True)
 
     if inputs.gen_arr or inputs.All:
-        print("Assuming %0.2f for %s" % (DM, obs_name))
-        dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
-        flist_sb = glob.glob(dpath)
-        if len(flist_sb)==-1:
-            print("No SB data, cannot generate stokes array")
-        else:
-            dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
-
-            # if not os.path.exists(dedisp_data_path):
-            #     fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
-            #     dedisp_data_path = glob.glob(fn_dedisp)[0]
             fnmask = inputs.basedir+'/numpyarr/rfimask'
 
             if not os.path.exists(fnmask):
@@ -310,6 +297,21 @@ if __name__ == '__main__':
             else:
                 # Mask out certain channels
                 rfimask = fnmask
+
+        print("Assuming %0.2f for %s" % (DM, obs_name))
+        dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
+        flist_sb = glob.glob(dpath)
+        if len(flist_sb)==-1:
+            print("No SB data, cannot generate stokes array")
+        else:
+            dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
+
+            if not os.path.exists(dedisp_data_path):
+                 fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
+                 try:
+                     dedisp_data_path = glob.glob(fn_dedisp)[0]
+                 except:
+                     pass 
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM, 
