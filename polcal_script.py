@@ -24,8 +24,6 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
         if type(rfimask)==str:
             mask = np.loadtxt(rfimask).astype(int)
             stokes_arr[:, mask] = 0.0
-    elif len(glob.glob(dedisp_data_path)[0])==0:
-        print("Found one! %s" % )
     else:
         print("No dedispersed file, using %s" % dpath)
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
