@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pylab as plt
 import argparse 
 import glob
+import time 
 
 import tools
 import pol
@@ -230,6 +231,9 @@ if __name__ == '__main__':
     check_dirs(inputs.basedir)
 
     if inputs.dada or inputs.All:
+        print("ARE YOU SURE YOU WANT TO USE ALL THAT MEMORY for dada writer?")
+        print("Sleeping for 5 seconds to let you decide.")
+        time.sleep(5)
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
         print("Converting dada into numpy for %s" % fndada)
