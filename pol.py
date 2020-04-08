@@ -61,11 +61,11 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
         arr = tools.dedisperse(arr, DM, freq=freq)[:, :last_ind]
         nt, nf = arr.shape[-1], arr.shape[0]
 #        arr = arr - np.median(arr, axis=-1, keepdims=True)
-        arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
-        arr = arr.reshape(nf//rebin_freq, rebin_freq, 
-                          nt//rebin_time, rebin_time).mean(1).mean(-1)
+#        arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
+#        arr = arr.reshape(nf//rebin_freq, rebin_freq, 
+#                          nt//rebin_time, rebin_time).mean(1).mean(-1)
         arr_list.append(arr)
-
+    print(arr_list, len(arr_list))
     pulse_sample = np.argmax(arr_list[0].mean(0))
 
     return arr_list, pulse_sample
