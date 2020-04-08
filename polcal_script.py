@@ -4,40 +4,45 @@ import numpy as np
 import matplotlib.pylab as plt
 import argparse 
 import glob
-import time 
+import time
 
 import tools
 import pol
 
 freq_arr = pol.freq_arr
-rebin_time = 1
-rebin_freq = 1
 pulse_width = 1 # number of samples to sum over
 transpose = False
 SNRtools = tools.SNR_Tools()
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
-    print(dedisp_data_path)
     if os.path.exists(dedisp_data_path):
         print("Reading %s in directly" % dedisp_data_path)
         stokes_arr = np.load(dedisp_data_path)
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
         stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
         pulse_sample = 500
+        if type(rfimask)==str:
+            mask = np.loadtxt(rfimask).astype(int)
+            stokes_arr[:, mask] = 0.0
+    elif len(glob.glob(dedisp_data_path)[0])==0:
+        print("Found one! %s" % )
     else:
+        print("No dedispersed file, using %s" % dpath)
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
-                                                   rebin_time=rebin_time, 
-                                                   rebin_freq=rebin_freq, 
                                                    DM=DM, 
                                                    trans=False,
                                                    RFI_clean=rfimask)
         stokes_arr = np.concatenate(arr_list, axis=0)
-        stokes_arr = stokes_arr.reshape(4, pol.NFREQ//rebin_freq, -1)
+        stokes_arr = stokes_arr.reshape(4, pol.NFREQ, -1)
 
         if type(dedisp_data_path)==str:
             stokes_arr_small = stokes_arr[:, :, 
                                 pulse_sample-500:pulse_sample+500]
             np.save(dedisp_data_path, stokes_arr_small)
+
+    for ii in range(4):
+        ind = np.where(stokes_arr[ii]!=0)[0]
+        stokes_arr[ii] /= np.std(stokes_arr[ii][ind])
 
     return stokes_arr, pulse_sample
 
@@ -57,12 +62,20 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     
+    I = stokes_arr[0]-stokes_arr[0].mean(-1)[:, None]
+    Q = stokes_arr[1]-stokes_arr[1].mean(-1)[:, None]
+    U = stokes_arr[2]-stokes_arr[2].mean(-1)[:, None]
+    V = stokes_arr[3]-stokes_arr[3].mean(-1)[:, None]
+    Ptotal = np.sqrt(Q**2 + U**2 + V**2).mean(0)
+    Ptotal -= np.median(Ptotal)
+
     plt.subplot(211)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
     plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
     plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
-    plt.legend(['I', 'Q', 'U', 'V'])
+    plt.plot(Ptotal,'--',color='k')
+    plt.legend(['I', 'Q', 'U', 'V', 'Pol total'])
     plt.subplot(212)
     plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
     plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
@@ -145,10 +158,13 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
               vmin=P_derot_arr.max()*0.5, extent=extent)
     plt.xlabel('Phi (deg)', fontsize=16)
     plt.ylabel('RM (rad m**-2)', fontsize=16)
-    plt.show
+    plt.show()
 
 
 def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
+    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
     stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
@@ -174,7 +190,7 @@ def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
     plt.imshow(stokes_arr_[3]-stokes_arr_[3].mean(-1)[:, None], aspect='auto')
     plt.xlabel('Time (samples)')
     plt.suptitle(suptitle)
-    plt.plot()
+    plt.show()
 
 
 def mk_pol_plot(stokes_arr, pulse_sample=None, pulse_width=1):
@@ -237,7 +253,7 @@ if __name__ == '__main__':
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
         print("Converting dada into numpy for %s" % fndada)
-#        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
         if inputs.polcal:
             fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
             outdir = inputs.basedir+'/polcal/'
@@ -273,31 +289,33 @@ if __name__ == '__main__':
                                                         save_sol=True)
 
     if inputs.gen_arr or inputs.All:
+        fnmask = inputs.basedir+'/numpyarr/rfimask'
+
+        if not os.path.exists(fnmask):
+            # There is no rfimask file, but will do rfi cleaning
+            rfimask = True
+        else:
+            # Mask out certain channels
+            rfimask = fnmask
+
         print("Assuming %0.2f for %s" % (DM, obs_name))
         dpath = inputs.basedir + '/numpyarr/stokes*sb*.npy'
         flist_sb = glob.glob(dpath)
-        if len(flist_sb)==-1:
-            print("No SB data, cannot generate stokes array")
-        else:
-            dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
-
-            # if not os.path.exists(dedisp_data_path):
-            #     fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
-            #     dedisp_data_path = glob.glob(fn_dedisp)[0]
-            fnmask = inputs.basedir+'/numpyarr/rfimask'
-
-            if not os.path.exists(fnmask):
-                # There is no rfimask file, but will do rfi cleaning
-                rfimask = True
-            else:
-                # Mask out certain channels
-                rfimask = fnmask
-
+        if len(flist_sb)==4:
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                     dedisp_data_path=dedisp_data_path, DM=DM, 
                                     rfimask=rfimask)
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
+        else:
+            dedisp_data_path = inputs.basedir+'/numpyarr/%s_dedisp.npy' % obs_name
+
+            if not os.path.exists(dedisp_data_path):
+                 fn_dedisp = inputs.basedir+'/numpyarr/*_dedisp.npy'
+                 try:
+                     dedisp_data_path = glob.glob(fn_dedisp)[0]
+                 except:
+                     pass 
 
     try:
         stokes_arr
@@ -384,6 +402,7 @@ if __name__ == '__main__':
         RMs, P_derot_arr, RMmax, phimax, derot_phase = results_faraday
 
         if inputs.mk_plot:
+            print("Attemping to plot")
             plot_RMspectrum(RMs, P_derot_arr, RMmax, 
                             phimax, derot_phase, 
                             fn_fig='%s_RMspectrum.pdf' % obs_name)
