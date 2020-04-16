@@ -232,7 +232,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  outdir='./', sig_thresh_local=5.0,
                  subtract_zerodm=False,
                  threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
-                 n_iter_time=3, n_iter_frequency=3, clean_type='time', freq=1370,
+                 n_iter_time=3, n_iter_frequency=3, clean_type='time', freq=1370.0,
                  sb_generator=None, sb=None):
     """ Locate data within filterbank file (fn_fi)
     at some time t0, and dedisperse to dm0, generating
@@ -274,7 +274,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     """
 
     try:
-        rfimask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(freq))
+        rfimask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(int(freq)))
         rfimask = rfimask.astype(int)
     except:
         rfimask = np.array([])
@@ -304,7 +304,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     freq_low = freq_up + nfreq*rawdatafile.header['foff']
     ntime_fil = (os.path.getsize(fn_fil) - rawdatafile.header_size)/nfreq
     tdm = np.abs(8.3*1e-6*dm0*dfreq_MHz*(freq_low/1000.)**-3)
-
     dm_min = max(0, dm0-40)
     dm_max = dm0 + 40
     dms = np.linspace(dm_min, dm_max, ndm, endpoint=True)
@@ -385,7 +384,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     rawdatafile.close()
     # apply dumb mask
-    data.data[rfimask] = 0.
+    if len(rfimask)>0:data.data[rfimask] = 0.
 
     if rficlean is True:
         data.data = cleandata(data.data, threshold_time, threshold_frequency, bin_size, \
@@ -675,7 +674,7 @@ if __name__=='__main__':
 
     parser.add_option('--sbmax', type=int, default=70, help="Last SB to process data for (Default: 70)")
 
-    parser.add_option('--central_freq', dest='freq', type=int, default=1370, 
+    parser.add_option('--central_freq', dest='freq', type=float, default=1370, 
                       help="Central frequency in zapped channels filename (Default: 1370)")
 
     logfn = time.strftime("%Y%m%d-%H%M") + '.log'
