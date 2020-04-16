@@ -14,7 +14,12 @@ import optparse
 import logging
 from threading import Thread
 
-from pypulsar.formats import filterbank, spectra
+try:
+    from pypulsar.formats import filterbank, spectra
+except:
+    import filterbank
+    spectra = filterbank.spectra
+    filterbank.filterbank = filterbank.FilterbankFile 
 
 try:
     from darc.sb_generator import SBGenerator
