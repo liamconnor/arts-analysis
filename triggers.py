@@ -17,6 +17,7 @@ from threading import Thread
 try:
     from pypulsar.formats import filterbank, spectra
 except:
+    print("Could not import pypulsar, using filterbank")
     import filterbank
     spectra = filterbank.spectra
     filterbank.filterbank = filterbank.FilterbankFile 
