@@ -163,6 +163,7 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
 
 
 def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
+    stokes_arr[:, 400:600]
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
     stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
