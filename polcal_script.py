@@ -39,9 +39,9 @@ def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
                                 pulse_sample-500:pulse_sample+500]
             np.save(dedisp_data_path, stokes_arr_small)
 
-    for ii in range(4):
-        ind = np.where(stokes_arr[ii]!=0)[0]
-        stokes_arr[ii] /= np.std(stokes_arr[ii][ind])
+    # for ii in range(4):
+    #     ind = np.where(stokes_arr[ii]!=0)[0]
+    #     stokes_arr[ii] /= np.std(stokes_arr[ii][ind])
 
     return stokes_arr, pulse_sample
 
@@ -313,8 +313,8 @@ if __name__ == '__main__':
                      dedisp_data_path = None 
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
-                                    dedisp_data_path=dedisp_data_path, DM=DM, 
-                                    rfimask=rfimask)
+                                        dedisp_data_path=dedisp_data_path, DM=DM, 
+                                        rfimask=rfimask)
 
             snr_max, width_max = get_width(stokes_arr[0].mean(0))
 
