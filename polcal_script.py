@@ -23,11 +23,11 @@ def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
                                                    RFI_clean=rfimask)
         stokes_arr = np.concatenate(arr_list, axis=0)
         stokes_arr = stokes_arr.reshape(4, pol.NFREQ, -1)
+        stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
 
-        if type(dedisp_data_path)==str:
-            stokes_arr_small = stokes_arr[:, :, 
-                                pulse_sample-500:pulse_sample+500]
-            np.save(dedisp_data_path, stokes_arr_small)
+        if type(dedisp_data_path)!='':
+            np.save(dedisp_data_path, stokes_arr)
+
     elif os.path.exists(dedisp_data_path):
         print("Reading %s in directly" % dedisp_data_path)
         stokes_arr = np.load(dedisp_data_path)
@@ -40,9 +40,10 @@ def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
     else:
         print("Could not generate IQUV array")
         exit()
-    # for ii in range(4):
-    #     ind = np.where(stokes_arr[ii]!=0)[0]
-    #     stokes_arr[ii] /= np.std(stokes_arr[ii][ind])
+    for ii in range(4):
+         ind = np.where(stokes_arr[ii]!=0)[0]
+         sigstokes = np.std(np.mean(stokes_arr[ii][ind], axis=0))
+         stokes_arr[ii] /= sigstokes
 
     return stokes_arr, pulse_sample
 
