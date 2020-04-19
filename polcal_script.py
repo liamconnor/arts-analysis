@@ -15,7 +15,7 @@ transpose = False
 SNRtools = tools.SNR_Tools()
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
-    if os.path.exists(dedisp_data_path) and is not None:
+    if os.path.exists(dedisp_data_path) and dedisp_data_path is not None:
         print("Reading %s in directly" % dedisp_data_path)
         stokes_arr = np.load(dedisp_data_path)
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
