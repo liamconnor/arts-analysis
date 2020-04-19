@@ -14,8 +14,8 @@ pulse_width = 1 # number of samples to sum over
 transpose = False
 SNRtools = tools.SNR_Tools()
 
-def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
-    if dedisp_data_path is None:
+def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
+    if dedisp_data_path=='' or not os.path.exists(dedisp_data_path):
         print("No dedispersed file, using %s" % dpath)
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
                                                    DM=DM, 
