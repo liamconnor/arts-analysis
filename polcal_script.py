@@ -310,7 +310,8 @@ if __name__ == '__main__':
                  try:
                      dedisp_data_path = glob.glob(fn_dedisp)[0]
                  except:
-                     dedisp_data_path = None 
+                     dedisp_data_path = inputs.basedir +\
+                                        '/numpyarr/%s_dedisp.npy' % obs_name
 
             stokes_arr, pulse_sample = generate_iquv_arr(dpath, 
                                         dedisp_data_path=dedisp_data_path, DM=DM, 
