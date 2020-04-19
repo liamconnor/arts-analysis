@@ -832,6 +832,10 @@ class SNR_Tools:
             plt.ylim(0, snr_max*1.1)
             plt.show()
             
+        print("Max S/N: %0.2f" % snr_max)
+        print("Max S/N DM: %0.3f" % dm_max)
+        print("Max S/N Width: %0.2f" % width_max)
+
         return dms, snrs, width_arr, snr_max, dm_max, width_max
 
     def sigma_from_mad(self, data):
@@ -1263,7 +1267,6 @@ if __name__=='__main__':
             print("Comparing both against the truth file")
             
             
-#        SNRTools.plot_comparison(par_1, par_2, par_match_arr, ind_missed, figname=figname)
 
 
 
