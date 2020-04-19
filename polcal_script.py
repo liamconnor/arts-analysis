@@ -15,15 +15,16 @@ transpose = False
 SNRtools = tools.SNR_Tools()
 
 def generate_iquv_arr(dpath, dedisp_data_path=None, DM=0, rfimask=None):
-    if os.path.exists(dedisp_data_path) and dedisp_data_path is not None:
-        print("Reading %s in directly" % dedisp_data_path)
-        stokes_arr = np.load(dedisp_data_path)
-        pulse_sample = np.argmax(stokes_arr[0].mean(0))
-        stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
-        pulse_sample = 500
-        if type(rfimask)==str:
-            mask = np.loadtxt(rfimask).astype(int)
-            stokes_arr[:, mask] = 0.0
+    if dedisp_data_path is not None:
+        if os.path.exists(dedisp_data_path):
+            print("Reading %s in directly" % dedisp_data_path)
+            stokes_arr = np.load(dedisp_data_path)
+            pulse_sample = np.argmax(stokes_arr[0].mean(0))
+            stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
+            pulse_sample = 500
+            if type(rfimask)==str:
+                mask = np.loadtxt(rfimask).astype(int)
+                stokes_arr[:, mask] = 0.0
     else:
         print("No dedispersed file, using %s" % dpath)
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
