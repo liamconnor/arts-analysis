@@ -399,7 +399,10 @@ if __name__ == '__main__':
         mask = list(np.where(stokes_vec[0]==0)[0])
 #        mask += range(0,700)
         mask = list(set(mask))
+
+        print("Masking out:")
         print(mask)
+        print(stokes_vec.shape)
         results_faraday = pol.faraday_fit(stokes_vec, RMmin=inputs.rmmin, 
                                           RMmax=inputs.rmmax, nrm=1000, nphi=200, 
                                           mask=mask, plot=inputs.mk_plot)
