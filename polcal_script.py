@@ -34,6 +34,7 @@ def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
         stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
         pulse_sample = 500
+
         if type(rfimask)==str:
             mask = np.loadtxt(rfimask).astype(int)
             stokes_arr[:, mask] = 0.0
@@ -162,8 +163,9 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
     plt.show()
 
 
-def plot_all(stoke_arr, suptitle='', fds=16, tds=1):
-    stokes_arr[:, 400:600]
+def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
+    time_mid = int(stokes_arr.shape[-1]//2)
+    stokes_arr = stokes_arr[:, :, time_mid-100:time_mid+100]
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
     stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
