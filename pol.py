@@ -65,7 +65,7 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
 #        arr = arr.reshape(nf//rebin_freq, rebin_freq, 
 #                          nt//rebin_time, rebin_time).mean(1).mean(-1)
         arr_list.append(arr)
-    print(arr_list, len(arr_list))
+
     pulse_sample = np.argmax(arr_list[0].mean(0))
 
     return arr_list, pulse_sample
@@ -93,7 +93,7 @@ def sb_from_npy(folder, sb=35, off_src=False):
         for tab in set(sbmap):
             print("Loading TAB{:02d}".format(tab))
             if off_src:
-                fn = '{}/stokes{}_tab{:02d}_off.npy'.format(folder, stokes, tab)
+                fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
             else:
                 fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
             data = np.load(fn)
