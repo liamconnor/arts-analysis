@@ -77,14 +77,14 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     plt.plot(Q.mean(0)-Q.mean())
     plt.plot(U.mean(0)-U.mean())
     plt.plot(V.mean(0)-V.mean())
-    plt.plot(Ptotal,'--',color='k')
-    plt.legend(['I', 'Q', 'U', 'V', 'Pol total'])
+#    plt.plot(Ptotal,'--',color='k')
+    plt.legend(['I', 'Q', 'U', 'V'])#, 'Pol total'])
     plt.subplot(212)
     plt.plot(I.mean(0)-I.mean())
     plt.plot(Q.mean(0)-Q.mean())
     plt.plot(U.mean(0)-U.mean())
     plt.plot(V.mean(0)-V.mean())
-    plt.plot(Ptotal,'--',color='k')
+#    plt.plot(Ptotal,'--',color='k')
     plt.xlim(pulse_sample-50, pulse_sample+50)
     plt.xlabel('Sample number', fontsize=15)
     plt.show()
@@ -342,7 +342,7 @@ if __name__ == '__main__':
 
         ivar = np.var(stokes_arr_cal[0],axis=1)[None,:,None]
         ivar = ivar**-1
-        ivar[ivar==np.inf] = 0
+        ivar[ivar==np.inf] = 
         plot_dedisp(stokes_arr_cal*ivar, 
                     pulse_sample=pulse_sample, 
                     pulse_width=width_max)
