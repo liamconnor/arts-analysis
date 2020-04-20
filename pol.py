@@ -167,7 +167,8 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
         # mu_xy = np.mean(abs_diff)
         # sig_xy = np.std(abs_diff)
         # mask_xy = list(np.where(abs_diff < (mu_xy+3*sig_xy))[0])
-        mask_xy = range(189, 430)+range(821,830)+range(1530,1536)
+        mask_xy = range(11,13)+range(88,94)+range(39,43)+range(189,430)+
+                  range(821,830)+range(1530,1536)
         use_ind_xy = np.delete(use_ind_xy, mask_xy)
 
     xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
