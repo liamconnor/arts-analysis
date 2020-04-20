@@ -234,10 +234,7 @@ if __name__ == '__main__':
                         help='Faraday fit and de-rotate', 
                         action='store_true')
     parser.add_argument('-p', '--mk_plot', 
-                        help='plot 1D stokes data in time', 
-                        action='store_true')
-    parser.add_argument('-ps', '--plot_stokes', 
-                        help='plot 2D stokes data', 
+                        help='plot various data products along the way', 
                         action='store_true')
     parser.add_argument('-src', '--src', help='calibrator source name', 
                         default='3C286', type=str)
@@ -360,7 +357,7 @@ if __name__ == '__main__':
         plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
                     pulse_width=width_max)
 
-    if inputs.calibrate_frb or inputs.All:
+    if inputs.polcal or inputs.All:
         try:
            stokes_arr
         except NameError:
