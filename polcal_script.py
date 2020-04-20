@@ -73,10 +73,10 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     Ptotal -= np.median(Ptotal)
 
     plt.subplot(211)
-    plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
-    plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
-    plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
-    plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
+    plt.plot(I.mean(0)-I.mean())
+    plt.plot(Q.mean(0)-Q.mean())
+    plt.plot(U.mean(0)-U.mean())
+    plt.plot(V.mean(0)-V.mean())
     plt.plot(Ptotal,'--',color='k')
     plt.legend(['I', 'Q', 'U', 'V', 'Pol total'])
     plt.subplot(212)
@@ -120,11 +120,12 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
     stokes_arr_cal[2], stokes_arr_cal[3] = xy_data.real, xy_data.imag
     stokes_arr_cal[0] = stokes_arr[0]
     stokes_arr_cal[1] = stokes_arr[1]
-    if plot:
-        plt.plot(xy_phase)
-        plt.plot(mask_xy, xy_phase[mask_xy])
-        plt.plot(xy_cal, color='red')
-        plt.legend(['XY_phase_calibrator', 'masked', 'Cal sol'])
+#    if plot:
+    plt.plot(xy_phase)
+    plt.plot(mask_xy, xy_phase[mask_xy])
+    plt.plot(xy_cal, color='red')
+    plt.legend(['XY_phase_calibrator', 'masked', 'Cal sol'])
+    plt.show()
 
     return stokes_arr_cal
 
