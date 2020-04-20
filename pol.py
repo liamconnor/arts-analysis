@@ -150,6 +150,46 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
 
     return stokes_arr_spec, bandpass, np.angle(xy)
 
+def bandpass_correct(stokes_arr, bandpass_path):
+    bp_arr = np.load(bandpass_path)
+    stokes_arr /= bp_arr[None, :, None]
+
+    return stokes_arr
+
+def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
+    stokes_arr_cal = np.zeros_like(stokes_arr)
+    # Load xy phase cal from 3c286
+    xy_phase = np.load(fn_xy_phase)
+    use_ind_xy = np.arange(stokes_arr.shape[1])
+
+    if clean:
+        # abs_diff = np.abs(np.diff(xy_phase))
+        # mu_xy = np.mean(abs_diff)
+        # sig_xy = np.std(abs_diff)
+        # mask_xy = list(np.where(abs_diff < (mu_xy+3*sig_xy))[0])
+        mask_xy = range(189, 430)
+        use_ind_xy = np.delete(use_ind_xy, mask_xy)
+
+    xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
+                    xy_phase[use_ind_xy], 14))(freq_arr)
+    for ii in range(4):
+        stokes_arr[ii] -= np.median(stokes_arr[ii], keepdims=True, axis=-1)
+    # Get FRB stokes I spectrum 
+    I, Q, U, V = stokes_arr[0], stokes_arr[1], stokes_arr[2], stokes_arr[3]
+    xy_data = U + 1j*V
+    xy_data *= np.exp(-1j*xy_cal[:, None])
+    stokes_arr_cal[2], stokes_arr_cal[3] = xy_data.real, xy_data.imag
+    stokes_arr_cal[0] = stokes_arr[0]
+    stokes_arr_cal[1] = stokes_arr[1]
+    if plot:
+        plt.plot(xy_phase)
+        plt.plot(mask_xy, xy_phase[mask_xy])
+        plt.plot(xy_cal, color='red')
+        plt.legend(['XY_phase_calibrator', 'masked', 'Cal sol'])
+        plt.show()
+
+    return stokes_arr_cal
+
 def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
     """ Create complex xy spectrum from U/V. Find phase 
     such that flucations in V are minimized. Derotate xy 
