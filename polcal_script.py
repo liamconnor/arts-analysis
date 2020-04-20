@@ -68,7 +68,8 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     Q = stokes_arr[1]
     U = stokes_arr[2]
     V = stokes_arr[3]
-    Ptotal = np.sqrt((Q-np.mean(Q))**2 + (U-np.mean(U))**2 + (V-np.mean(V))**2).mean(0)
+    Ptotal = np.sqrt((Q-np.mean(Q))**2 + (U-np.mean(U))**2 + 
+             (V-np.mean(V))**2).mean(0)
     Ptotal -= np.median(Ptotal)
 
     plt.subplot(211)
@@ -165,6 +166,10 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
 
 
 def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
+    """ Create a 4x2 grid of subplots for 
+    pulse profiles and waterfalls in all 
+    four Stokes params
+    """
     time_mid = int(stokes_arr.shape[-1]//2)
     stokes_arr = stokes_arr[:, :, time_mid-100:time_mid+100]
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
@@ -257,10 +262,21 @@ if __name__ == '__main__':
         time.sleep(5)
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
-        print("Converting dada into numpy for %s" % fndada)
-        os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+
+        if len(glob.glob(outdir+'/*npy'))>6:
+            print("Converting dada into numpy for %s" % fndada)
+            os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+
         if inputs.polcal:
-            fndada = glob.glob(inputs.basedir+'/polcal/*dada')[0]
+            print("Generating on source npy from dada")
+            fndada = glob.glob(inputs.basedir+'/polcal/%s/on/*dada' 
+                               % inputs.src)[0]
+            outdir = inputs.basedir+'/polcal/'
+            os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+
+            print("Generating off source npy from dada")
+            fndada = glob.glob(inputs.basedir+'/polcal/%s/off/*dada' 
+                               % inputs.src)[0]
             outdir = inputs.basedir+'/polcal/'
             os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
 
@@ -279,12 +295,16 @@ if __name__ == '__main__':
         print("Generating SB from npy data")
 
         if inputs.polcal or inputs.All:
-            folder_polcal = inputs.basedir+'/polcal/'
-            pol.sb_from_npy(folder_polcal, sb=35, off_src=False)
-            pol.sb_from_npy(folder_polcal, sb=35, off_src=True)
+            folder_polcal = inputs.basedir+'/polcal/'+inputs.src
+            print("Generating SB for %s" folder_polcal)
+            pol.sb_from_npy(folder_polcal+'/on/', sb=35, off_src=False)
+            pol.sb_from_npy(folder_polcal+'/off/', sb=35, off_src=True)
 
         folder = inputs.basedir+'/numpyarr/'
-        pol.sb_from_npy(folder, sb=SB, off_src=False)
+    
+        if len(glob.glob(folder+'stokes*_on*'))<4:
+            print("Generating SB for FRB data")
+            pol.sb_from_npy(folder, sb=SB, off_src=False)
 
     if inputs.polcal or inputs.All:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
