@@ -263,7 +263,7 @@ if __name__ == '__main__':
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
 
-        if len(glob.glob(outdir+'/*npy'))>6:
+        if len(glob.glob(outdir+'/*npy'))<6:
             print("Converting dada into numpy for %s" % fndada)
             os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
 
