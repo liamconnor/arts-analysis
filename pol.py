@@ -183,7 +183,7 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
     stokes_arr_cal[1] = stokes_arr[1]
     if plot:
         plt.plot(xy_phase)
-        plt.plot(mask_xy, xy_phase[mask_xy])
+        plt.plot(mask_xy, xy_phase[mask_xy],'.')
         plt.plot(xy_cal, color='red')
         plt.legend(['XY_phase_calibrator', 'masked', 'Cal sol'])
         plt.show()
