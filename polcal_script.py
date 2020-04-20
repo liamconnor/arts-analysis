@@ -296,7 +296,7 @@ if __name__ == '__main__':
 
         if inputs.polcal or inputs.All:
             folder_polcal = inputs.basedir+'/polcal/'+inputs.src
-            print("Generating SB for %s" folder_polcal)
+            print("Generating SB for %s" % folder_polcal)
             pol.sb_from_npy(folder_polcal+'/on/', sb=35, off_src=False)
             pol.sb_from_npy(folder_polcal+'/off/', sb=35, off_src=True)
 
