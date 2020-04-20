@@ -151,6 +151,54 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
 
     return stokes_arr_spec, bandpass, np.angle(xy)
 
+def unleak_IQ(stokes_arr, fn_GxGy):
+    """ Take array of gain ratios (fn_GxGy, either 
+    path or numpy array) and remove leakage from 
+    I to Q.
+    """
+
+    if type(fn_GxGy)==str:
+        fGxGy = np.load(fn_GxGy)
+    else:
+        fGxGy = fn_GxGy
+
+    if len(stokes_arr.shape)==2:
+        stokes_arr = stokes_arr[..., None]
+
+    stokes_arr_cal = np.zeros_like(stokes_arr)
+
+    nfreq, ntime = stokes_arr[0].shape
+    assert nfreq==len(f), "Cal array different length from data"
+
+    # Construct coherence matrixes
+    Pobs = np.zeros([2,2,nfreq,ntime])
+    Ptrue = np.zeros([2,2,nfreq,ntime])
+    Pobs[0,0] = stokes_arr[0]+stokes_arr[1] # I+Q
+#    Pobs[:,0,1] = stokes_arr[2]+1j*stokes_arr[3] # U+iV
+#    Pobs[:,1,0] = stokes_arr[3]+stokes_arr[1] # U-iV
+    Pobs[1,1] = stokes_arr[0]-stokes_arr[1] # I-Q
+
+    for ii in xrange(nfreq):
+        # Construct rotation matrix 
+        M = np.array([[1,0],[0,fGxGy[ii]]])
+        Minv = np.linalg.inv(M)
+        # Derotate Q/I
+        Ptrue[:,:,ii] = np.dot(Minv, Pobs[:,:,ii])
+
+    stokes_arr_cal[0] = 0.5 * (Ptrue[0,0]+Ptrue[1,1])
+    stokes_arr_cal[1] = 0.5 * (Ptrue[0,0]-Ptrue[1,1])
+    stokes_arr_cal[2] = stokes_arr[2]
+    stokes_arr_cal[3] = stokes_arr[3]
+
+    for ii in range(4):
+        stokes_arr_cal[ii] -= np.median(stokes_arr_cal[ii])
+        stokes_arr_cal[ii] /= np.std(np.mean(stokes_arr_cal[ii],axis=0))
+    
+    stokes_arr_cal[np.isnan(stokes_arr_cal)] = 0.0
+
+    return stokes_arr_cal, fGxGy
+
+
 def bandpass_correct(stokes_arr, bandpass_path):
     bp_arr = np.load(bandpass_path)
     stokes_arr /= bp_arr[None, :, None]
