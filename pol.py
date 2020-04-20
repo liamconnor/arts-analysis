@@ -168,7 +168,7 @@ def unleak_IQ(stokes_arr, fn_GxGy):
     stokes_arr_cal = np.zeros_like(stokes_arr)
 
     nfreq, ntime = stokes_arr[0].shape
-    assert nfreq==len(f), "Cal array different length from data"
+    assert nfreq==len(fGxGy), "Cal array different length from data"
 
     # Construct coherence matrixes
     Pobs = np.zeros([2,2,nfreq,ntime])
