@@ -337,12 +337,14 @@ if __name__ == '__main__':
         fn_GxGy = inputs.basedir+'/polcal/GxGy_ratio_freq.npy'
 
         if os.path.exists(fn_GxGy):
-            print("Removing XY gain difference")
-            stokes_arr, fGxGy = pol.unleak_IQ(stokes_arr, fn_GxGy)
+            print("\n\nRemoving XY gain difference")
+            stokes_arr_cal, fGxGy = pol.unleak_IQ(stokes_arr.copy(), fn_GxGy)
+        else:
+            stokes_arr_cal = stokes_arr.copy()
 
         print("Calibrating bandpass")
-        stokes_arr_cal = pol.bandpass_correct(stokes_arr.copy(), fn_bandpass)
-        print("Calibrating xy correlation with %s" % inputs.src)
+        stokes_arr_cal = pol.bandpass_correct(stokes_arr, fn_bandpass)
+        print("Calibrating xy correlation with %s\n\n" % inputs.src)
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
 
