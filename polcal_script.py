@@ -339,7 +339,8 @@ if __name__ == '__main__':
         print("Calibrating xy correlation with %s" % inputs.src)
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
-
+        plot_dedisp(stokes_arr_cal, pulse_sample=pulse_sample, 
+                    pulse_width=width_max)
     if inputs.mk_plot:
         plot_all(stokes_arr, suptitle='Uncalibrated', 
                  fds=inputs.freq_downsample, tds=inputs.time_downsample)
@@ -347,8 +348,6 @@ if __name__ == '__main__':
         #         pulse_sample=pulse_sample, pulse_width=8)
         try:
            stokes_arr_cal
-           plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
-                    pulse_width=width_max)
            plot_all(stokes_arr_cal, suptitle='xy-Calibrated', 
                     fds=inputs.freq_downsample, tds=inputs.time_downsample)
            # mk_pol_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
