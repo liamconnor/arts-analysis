@@ -110,7 +110,8 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     """ This function should get both bandpass calibration and 
     a polarisation calibration from some point source (usually 3C286)
     """
-    alpha_dict = {'3C286' : 0.51}
+    alpha_dict = {'3C286' : 0.51,
+                  '3C147' : 0.66}
     fn_spec = basedir+'/polcal/stokes_uncal_spectra.npy'
 
     if os.path.exists(fn_spec):

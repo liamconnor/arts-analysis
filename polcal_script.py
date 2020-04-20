@@ -109,6 +109,8 @@ def check_dirs(fdir):
 
 def plot_RMspectrum(RMs, P_derot_arr, RMmax, 
                     phimax, derot_phase, fn_fig=None):
+    """ Plot power vs. RM 
+    """
     fig=plt.figure()
     plt.plot(RMs, np.max(P_derot_arr, axis=-1))
     plt.ylabel('Defaraday amplitude', fontsize=16)
