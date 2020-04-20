@@ -64,11 +64,11 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     
-    I = stokes_arr[0]-stokes_arr[0].mean(-1)[:, None]
-    Q = stokes_arr[1]-stokes_arr[1].mean(-1)[:, None]
-    U = stokes_arr[2]-stokes_arr[2].mean(-1)[:, None]
-    V = stokes_arr[3]-stokes_arr[3].mean(-1)[:, None]
-    Ptotal = np.sqrt(Q**2 + U**2 + V**2).mean(0)
+    I = stokes_arr[0]
+    Q = stokes_arr[1]
+    U = stokes_arr[2]
+    V = stokes_arr[3]
+    Ptotal = np.sqrt((Q-np.mean(Q))**2 + (U-np.mean(U))**2 + (V-np.mean(V))**2).mean(0)
     Ptotal -= np.median(Ptotal)
 
     plt.subplot(211)
@@ -79,11 +79,12 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     plt.plot(Ptotal,'--',color='k')
     plt.legend(['I', 'Q', 'U', 'V', 'Pol total'])
     plt.subplot(212)
-    plt.plot(stokes_arr[0].mean(0)-stokes_arr[0].mean())
-    plt.plot(np.abs(stokes_arr[1]).mean(0)-np.abs(stokes_arr[1]).mean())
-    plt.plot(np.abs(stokes_arr[2]).mean(0)-np.abs(stokes_arr[2]).mean())
-    plt.plot(np.abs(stokes_arr[3]).mean(0)-np.abs(stokes_arr[3]).mean())
-    plt.xlim(pulse_sample-100, pulse_sample+100)
+    plt.plot(I.mean(0)-I.mean())
+    plt.plot(Q.mean(0)-Q.mean())
+    plt.plot(U.mean(0)-U.mean())
+    plt.plot(V.mean(0)-V.mean())
+    plt.plot(Ptotal,'--',color='k')
+    plt.xlim(pulse_sample-50, pulse_sample+50)
     plt.xlabel('Sample number', fontsize=15)
     plt.show()
 
