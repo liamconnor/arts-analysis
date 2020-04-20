@@ -339,8 +339,11 @@ if __name__ == '__main__':
         print("Calibrating xy correlation with %s" % inputs.src)
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
+        plt.plot(stokes_arr_cal[0].mean(1))
+        plt.show()
         plot_dedisp(stokes_arr_cal, pulse_sample=pulse_sample, 
                     pulse_width=width_max)
+
     if inputs.mk_plot:
         plot_all(stokes_arr, suptitle='Uncalibrated', 
                  fds=inputs.freq_downsample, tds=inputs.time_downsample)
