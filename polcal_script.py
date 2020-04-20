@@ -340,7 +340,7 @@ if __name__ == '__main__':
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
 
-        ivar = np.var(stokes_arr_cal[0],axis=1)[None,:,None]
+        ivar = (np.var(stokes_arr_cal[0],axis=1)[None,:,None])**-1
         ivar[ivar==np.inf]==0
         plot_dedisp(stokes_arr_cal*ivar, 
                     pulse_sample=pulse_sample, 
