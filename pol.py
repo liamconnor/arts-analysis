@@ -120,7 +120,7 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
         for ii, ss in enumerate(stokes_ps):
             don = np.load(basedir+'/polcal/%s/on/stokes%s_sb_on.npy' % (src, ss))
             try:
-                don = np.load(basedir+'/polcal/%s/off/stokes%s_sb_off.npy' % (src, ss))
+                doff = np.load(basedir+'/polcal/%s/off/stokes%s_sb_off.npy' % (src, ss))
             except:
                 print("There is no polcal off npy file")
                 doff = 0*don
