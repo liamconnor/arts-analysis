@@ -342,7 +342,7 @@ if __name__ == '__main__':
 
         ivar = np.var(stokes_arr_cal[0],axis=1)[None,:,None]
         ivar = ivar**-1
-        ivar[ivar==np.inf] = 
+        ivar[ivar==np.inf] = 0
         plot_dedisp(stokes_arr_cal*ivar, 
                     pulse_sample=pulse_sample, 
                     pulse_width=width_max)
