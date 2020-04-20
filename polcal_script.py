@@ -328,10 +328,12 @@ if __name__ == '__main__':
         fn_bandpass = inputs.basedir+'/polcal/bandpass.npy'
         fn_xy_phase = inputs.basedir+'/polcal/xy_phase.npy'
         print("Calibrating bandpass")
+        print(stokes_arr.mean())
         stokes_arr_cal = pol.bandpass_correct(stokes_arr.copy(), fn_bandpass)
         print("Calibrating xy correlation with %s" % inputs.src)
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
+        print(stokes_arr.mean())        
 
     if inputs.mk_plot:
         plot_all(stokes_arr, suptitle='Uncalibrated', 
