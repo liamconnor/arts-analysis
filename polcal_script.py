@@ -268,16 +268,16 @@ if __name__ == '__main__':
             os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
 
         if inputs.polcal:
-            print("Generating on source npy from dada")
-            fndada = glob.glob(inputs.basedir+'/polcal/%s/on/*dada' 
-                               % inputs.src)[0]
-            outdir = inputs.basedir+'/polcal/'
-            os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
+            # print("Generating on source npy from dada")
+            # fndada = glob.glob(inputs.basedir+'/polcal/%s/on/*dada' 
+            #                    % inputs.src)[0]
+            # outdir = inputs.basedir+'/polcal/%s/on/' % inputs.src
+            # os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
 
             print("Generating off source npy from dada")
             fndada = glob.glob(inputs.basedir+'/polcal/%s/off/*dada' 
                                % inputs.src)[0]
-            outdir = inputs.basedir+'/polcal/'
+            outdir = inputs.basedir+'/polcal/%s/off/' % inputs.src
             os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada, outdir))
 
     try:
