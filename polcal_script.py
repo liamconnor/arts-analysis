@@ -164,14 +164,14 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     """
     time_mid = int(stokes_arr.shape[-1]//2)
     print(stokes_arr.shape, time_mid)
-    stokes_arr = rebin_tf(stokes_arr, tint=fds, fint=tds)
+#    stokes_arr = rebin_tf(stokes_arr, tint=fds, fint=tds)
     stokes_arr_ = stokes_arr[:, :, time_mid-100:time_mid+100]
-    # stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
-    # stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
-    # stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
-    # stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
-    # stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
-    # stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
+    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
+    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
 
     for ii in range(4):
         stokes_arr_[ii] -= np.median(stokes_arr_[ii], axis=-1, keepdims=True)
