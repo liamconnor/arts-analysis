@@ -131,22 +131,28 @@ def rebin_tf(data, tint=1, fint=1):
     """ Rebin in time and frequency accounting 
     for zeros
     """
-    nfreq, ntime = data.shape
+    if len(data.shape)==3:
+        dsl=3
+        nfreq, ntime = data[0].shape
+    elif len(data.shape)==2:
+        dsl=2
+        nfreq, ntime = data.shape
+        data = data[None]
 
     if fint>1:
         # Rebin in frequency
-        data_ = data[:nfreq//fint*fint].reshape(nfreq//fint, fint, ntime)
-        weights = (data_.mean(-1)>0).sum(1)
-        data_ = np.sum(data_, axis=1) / weights[:, None]
+        data_ = data[:, :nfreq//fint*fint].reshape(-1, nfreq//fint, fint, ntime)
+        weights = (data_.mean(-1)>0).sum(2)
+        data_ = np.sum(data_, axis=2) / weights[:,:,None]
         data_[np.isnan(data_)] = 0.0
     else:
         data_ = data
 
     if tint>1:
         # Rebin in time
-        data_ = data_[:, :ntime//tint*tint].reshape(nfreq//fint, ntime//tint, tint)
-        weights = (data_.mean(0)>0).sum(1)
-        data_ = np.sum(data_, axis=-1) / weights[None]
+        data_ = data_[:, :ntime//tint*tint].reshape(-1, nfreq//fint, ntime//tint, tint)
+        weights = (data_.mean(1)>0).sum(-1)
+        data_ = np.sum(data_, axis=-1) / weights[:, None]
         data_[np.isnan(data_)] = 0.0
 
     return data_
@@ -159,12 +165,13 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     time_mid = int(stokes_arr.shape[-1]//2)
     print(stokes_arr.shape, time_mid)
     stokes_arr = stokes_arr[:, :, time_mid-100:time_mid+100]
-    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
-    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
-    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
-    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
-    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
-    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
+    stokes_arr_ = rebin_tf(data, tint=fds, fint=tds)
+    # stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    # stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    # stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
+    # stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
+    # stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    # stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
 
     for ii in range(4):
         stokes_arr_[ii] -= np.median(stokes_arr_[ii], axis=-1, keepdims=True)
@@ -177,21 +184,25 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     plt.ylabel('I')
     plt.subplot(422)
     plt.imshow(stokes_arr_[0], aspect='auto',vmax=3,vmin=-2, cmap='RdBu')
+    plt.ylabel('Freq')
     plt.subplot(423)
     plt.plot(stokes_arr_[1].mean(0))
     plt.ylabel('Q')
     plt.subplot(424)
     plt.imshow(stokes_arr_[1], aspect='auto',vmax=3,vmin=-2, cmap='RdBu')
+    plt.ylabel('Freq')
     plt.subplot(425)
     plt.plot(stokes_arr_[2].mean(0))
     plt.ylabel('U')
     plt.subplot(426)
     plt.imshow(stokes_arr_[2], aspect='auto',vmax=3,vmin=-2, cmap='RdBu')
+    plt.ylabel('Freq')
     plt.subplot(427)
     plt.plot(stokes_arr_[3].mean(0))
     plt.ylabel('V')
     plt.subplot(428)
     plt.imshow(stokes_arr_[3], aspect='auto',vmax=3,vmin=-2, cmap='RdBu')
+    plt.ylabel('Freq')
     plt.xlabel('Time (samples)')
     plt.suptitle(suptitle)
     plt.show()
