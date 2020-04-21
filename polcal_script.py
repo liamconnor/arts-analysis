@@ -150,7 +150,7 @@ def rebin_tf(data, tint=1, fint=1):
 
     if tint>1:
         # Rebin in time
-        data_ = data_[:, :ntime//tint*tint].reshape(-1, nfreq//fint, ntime//tint, tint)
+        data_ = data_[:, :, :ntime//tint*tint].reshape(-1, nfreq//fint, ntime//tint, tint)
         weights = (data_.mean(1)>0).sum(-1)
         data_ = np.sum(data_, axis=-1) / weights[:, None]
         data_[np.isnan(data_)] = 0.0
