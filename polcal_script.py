@@ -127,6 +127,29 @@ def plot_RMspectrum(RMs, P_derot_arr, RMmax,
     plt.ylabel('RM (rad m**-2)', fontsize=16)
     plt.show()
 
+def rebin_tf(data, tint=1, fint=1):
+    """ Rebin in time and frequency accounting 
+    for zeros
+    """
+    nfreq, ntime = data.shape
+
+    if fint>1:
+        # Rebin in frequency
+        data_ = data[:nfreq//fint*fint].reshape(nfreq//fint, fint, ntime)
+        weights = (data_.mean(-1)>0).sum(1)
+        data_ = np.sum(data_, axis=1) / weights[:, None]
+        data_[np.isnan(data_)] = 0.0
+    else:
+        data_ = data
+
+    if tint>1:
+        # Rebin in time
+        data_ = data_[:, :ntime//tint*tint].reshape(nfreq//fint, ntime//tint, tint)
+        weights = (data_.mean(0)>0).sum(1)
+        data_ = np.sum(data_, axis=-1) / weights[None]
+        data_[np.isnan(data_)] = 0.0
+
+    return data_
 
 def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     """ Create a 4x2 grid of subplots for 
@@ -134,6 +157,7 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     four Stokes params
     """
     time_mid = int(stokes_arr.shape[-1]//2)
+    print(stokes_arr.shape, time_mid)
     stokes_arr = stokes_arr[:, :, time_mid-100:time_mid+100]
     stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
     stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
@@ -145,6 +169,8 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     for ii in range(4):
         stokes_arr_[ii] -= np.median(stokes_arr_[ii], axis=-1, keepdims=True)
         stokes_arr_[ii] /= np.std(stokes_arr_[ii], axis=-1, keepdims=True)
+
+    stokes_arr_[np.isnan(stokes_arr_)] = 0.0
 
     plt.subplot(421)
     plt.plot(stokes_arr_[0].mean(0))
