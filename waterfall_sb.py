@@ -82,9 +82,9 @@ if __name__=='__main__':
                       default='')
 
     parser.add_option('--tab', dest='tab', type=int,
-                      help="TAB to process (0 for IAB) (default: 0)", default=0)
+                      help="TAB to process (0 for IAB) (default: 0)", default=-1)
 
-    parser.add_option('--sb', dest='sb', type=str, default='36',
+    parser.add_option('--sb', dest='sb', type=str, default='35',
                       help="Process synthesized beams")
 
     parser.add_option('--central_freq', dest='freq', type=int, default=1370, 
@@ -141,12 +141,16 @@ if __name__=='__main__':
                  subtract_zerodm=False, 
                  threshold_time=3.25, threshold_frequency=2.75, bin_size=options.bin_size,
                  n_iter_time=options.n_iter_time, n_iter_frequency=options.n_iter_frequency, 
-                 clean_type=options.clean_type, freq=1370,
-                                  sb_generator=sb_generator, sb=sb)
+                 clean_type=options.clean_type, freq=options.freq,
+                 sb_generator=sb_generator, sb=sb)
+
+        print("Saved plots to %s/plots/" % options.outdir)
 
         if options.save_data:
             if sb is None:
                 sb_ = -1
             else:
                 sb_ = sb
-            np.save(options.outdir+'/'+fn_fil_.split('/')[-1]+"SB%d_dedisp.npy" % sb_, x[1])
+            fnoutdata=options.outdir+'/'+fn_fil_.split('/')[-1]+"SB%d_dedisp.npy" % sb_
+            np.save(fnoutdata, x[1])
+            print("Saved data to %s" % fnoutdata)
