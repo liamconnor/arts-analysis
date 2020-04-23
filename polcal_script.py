@@ -1,7 +1,12 @@
 import os
 
 import numpy as np
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
+
+#import matplotlib as mpl
+#mpl.use('Agg')
+#import matplotlib.pyplot as plt
+
 import argparse 
 import glob
 import time
@@ -163,14 +168,10 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     four Stokes params
     """
     time_mid = int(stokes_arr.shape[-1]//2)
-    print(stokes_arr.shape, time_mid)
 #    stokes_arr = rebin_tf(stokes_arr, tint=fds, fint=tds)
     stokes_arr_ = stokes_arr[:, :, time_mid-100:time_mid+100]
-    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,fds, -1).mean(2)
-    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
-    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
-    stokes_arr_ = stokes_arr.reshape(4,1536//fds,fds, -1).mean(2)
-    stokes_arr_ = stokes_arr_[..., :stokes_arr.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_.reshape(4,1536//fds,fds,-1).mean(2)
+    stokes_arr_ = stokes_arr_[..., :stokes_arr_.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
 
     for ii in range(4):
@@ -231,7 +232,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gen_arr', 
                         help='generate iquv array', action='store_true')
     parser.add_argument('-pc', '--polcal', 
-                        help='generate iquv array', action='store_true')
+                        help='do polarisation calibration', action='store_true')
     parser.add_argument('-c', '--calibrate_frb', 
                         help='use non-switch polcal solution to cal FRB', 
                         action='store_true')

@@ -220,8 +220,13 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
                   range(821,830)+range(1530,1536)
         use_ind_xy = np.delete(use_ind_xy, mask_xy)
 
-    xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
-                    xy_phase[use_ind_xy], 14))(freq_arr)
+#    xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
+#                    xy_phase[use_ind_xy], 14))(freq_arr)
+
+    print("Removing polyfit: test")
+    xy_cal = np.zeros([xy_phase.shape[0]])                
+    xy_cal[use_ind_xy] = xy_phase[use_ind_xy]
+
     for ii in range(4):
         stokes_arr[ii] -= np.median(stokes_arr[ii], keepdims=True, axis=-1)
     # Get FRB stokes I spectrum 
