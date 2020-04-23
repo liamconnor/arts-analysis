@@ -9,7 +9,6 @@ if __name__=='__main__':
           usage="%prog FN_FILTERBANK_PREFIX [OPTIONS]",
           description="Create diagnostic \
           plots for individual triggers. \
-          \
           If you want to plot a single TAB, feed the \
           program the full path to the .fil file. \
           If you want to plot a single SB or all SBs, \
@@ -143,6 +142,12 @@ if __name__=='__main__':
         fn_fil_ = fn_fil.strip('.fil')
     else:
         fn_fil_ = fn_fil
+
+    if options.tab!=-1:
+        sbs = [None]
+        sb_generator = None
+        fn_fil = fn_fil+'%0.2d.fil' % options.tab
+        fn_fil_ = fn_fil.strip('.fil')
 
     if options.CB=='':
         try:
