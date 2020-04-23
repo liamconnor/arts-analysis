@@ -140,14 +140,13 @@ if __name__=='__main__':
         sbs = [None]
         sb_generator = None
         fn_fil_ = fn_fil.strip('.fil')
-    else:
-        fn_fil_ = fn_fil
-
-    if options.tab!=-1:
+    elif options.tab!=-1:
         sbs = [None]
         sb_generator = None
         fn_fil = fn_fil+'%0.2d.fil' % options.tab
-        fn_fil_ = fn_fil.strip('.fil')
+        fn_fil_ = fn_fil.strip('.fil')       
+    else:
+        fn_fil_ = fn_fil
 
     if options.CB=='':
         try:
@@ -160,7 +159,11 @@ if __name__=='__main__':
         CB = options.CB
 
     for sb in sbs:
-        print('Plotting SB %s' % sb)
+        if sb is None:
+            print("Plotting data in \n%s" % fn_fil)
+        else:
+            print('Plotting SB %s' % sb)
+
         x = triggers.proc_trigger(fn_fil, options.dm, t0, -1,
                  ndm=options.ndm, mk_plot=True, downsamp=downsamp,
                  beamno=CB, fn_mask=None, nfreq_plot=options.nfreq_plot,
