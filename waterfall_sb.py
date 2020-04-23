@@ -115,6 +115,7 @@ if __name__=='__main__':
 
     if fn_fil.endswith('fil'):
         sbs = [None]
+        sb_generator = None
         fn_fil_ = fn_fil.strip('.fil')
     else:
         fn_fil_ = fn_fil
