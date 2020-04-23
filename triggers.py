@@ -275,8 +275,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     """
 
     try:
-        fndmask='/home/arts/.controller/amber_conf/\
-        zapped_channels_{:.0f}.conf'.format(int(freq))
+        fndmask='/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(int(freq))
         rfimask = np.loadtxt(fndmask)
         rfimask = rfimask.astype(int)
     except:
