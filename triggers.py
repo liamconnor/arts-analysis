@@ -234,7 +234,8 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  threshold_time=3.25, threshold_frequency=2.75, 
                  bin_size=32, n_iter_time=3, 
                  n_iter_frequency=3, clean_type='time', 
-                 freq=1370.0, sb_generator=None, sb=None):
+                 freq=1370.0, sb_generator=None, sb=None, 
+                 dumb_mask=True):
     """ Locate data within filterbank file (fn_fi)
     at some time t0, and dedisperse to dm0, generating
     plots
@@ -274,13 +275,14 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         data array with downsampled freq-time intensities
     """
 
-    try:
-        fndmask='/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(int(freq))
-        rfimask = np.loadtxt(fndmask)
-        rfimask = rfimask.astype(int)
-    except:
-        rfimask = np.array([])
-        logging.warning("Could not load dumb RFIMask")
+    if dumb_mask:
+        try:
+            fndmask='/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(int(freq))
+            rfimask = np.loadtxt(fndmask)
+            rfimask = rfimask.astype(int)
+        except:
+            rfimask = np.array([])
+            logging.warning("Could not load dumb RFIMask")
 
     SNRtools = tools.SNR_Tools()
     downsamp = min(4096, downsamp)
