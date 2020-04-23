@@ -112,6 +112,11 @@ if __name__=='__main__':
     parser.add_option('--sb', dest='sb', type=str, default='35',
                       help="Process synthesized beams")
 
+    parser.add_option('--no_dumb_mask', dest='no_dumb_mask', 
+                      action='store_true',
+                      help="Turn off dumb RFI mask",
+                      default=False)
+
     parser.add_option('--central_freq', dest='freq', type=int, default=1370, 
                       help="Central frequency in zapped channels \
                       filename (Default: 1370)")
@@ -177,6 +182,7 @@ if __name__=='__main__':
                  n_iter_time=options.n_iter_time, 
                  n_iter_frequency=options.n_iter_frequency, 
                  clean_type=options.clean_type, freq=options.freq,
+                 dumb_mask=not options.no_dumb_mask,
                  sb_generator=sb_generator, sb=sb)
 
         print("Saved plots to %s/plots/" % options.outdir)
