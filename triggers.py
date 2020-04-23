@@ -283,6 +283,8 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         except:
             rfimask = np.array([])
             logging.warning("Could not load dumb RFIMask")
+    else:
+        rfimask = np.array([])
 
     SNRtools = tools.SNR_Tools()
     downsamp = min(4096, downsamp)
