@@ -231,9 +231,10 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  rficlean=False, snr_comparison=-1,
                  outdir='./', sig_thresh_local=5.0,
                  subtract_zerodm=False,
-                 threshold_time=3.25, threshold_frequency=2.75, bin_size=32,
-                 n_iter_time=3, n_iter_frequency=3, clean_type='time', freq=1370.0,
-                 sb_generator=None, sb=None):
+                 threshold_time=3.25, threshold_frequency=2.75, 
+                 bin_size=32, n_iter_time=3, 
+                 n_iter_frequency=3, clean_type='time', 
+                 freq=1370.0, sb_generator=None, sb=None):
     """ Locate data within filterbank file (fn_fi)
     at some time t0, and dedisperse to dm0, generating
     plots
@@ -274,7 +275,9 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     """
 
     try:
-        rfimask = np.loadtxt('/home/arts/.controller/amber_conf/zapped_channels_{:.0f}.conf'.format(int(freq)))
+        fndmask='/home/arts/.controller/amber_conf/\
+        zapped_channels_{:.0f}.conf'.format(int(freq))
+        rfimask = np.loadtxt(fndmask)
         rfimask = rfimask.astype(int)
     except:
         rfimask = np.array([])
@@ -348,7 +351,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
     if ntime_fil < (start_bin+chunksize):
         logging.info("Trigger at end of file, skipping")
-#        print("Trigger at end of file, skipping")
         return [], [], [], []
 
     # get data of all files (SB) or one file (TAB/IAB)
@@ -365,10 +367,6 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                 continue
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
             load_tab_data(fname, start_bin, chunksize, out=data, tab=tab)
-            #thread = Thread(target=load_tab_data, args=[fname, start_bin, chunksize], kwargs={'out': data, 'tab': tab}, name='TAB{}'.format(tab))
-            #thread.daemon = True
-            #thread.start()
-            #threads.append(thread)
         for thread in threads:
             logging.info("Waiting for loading of {}".format(thread.name))
             thread.join()
@@ -377,8 +375,10 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
 
         data = sb_generator.synthesize_beam(data, sb=sb)
         # convert to a spectra object, mimicking filterbank.get_spectra
-        data = spectra.Spectra(rawdatafile.frequencies, rawdatafile.tsamp, data,
-                               starttime=start_bin*rawdatafile.tsamp, dm=0)
+        data = spectra.Spectra(rawdatafile.frequencies, 
+                               rawdatafile.tsamp, data,
+                               starttime=start_bin*rawdatafile.tsamp, 
+                               dm=0)
     else:
         data = rawdatafile.get_spectra(start_bin, chunksize)
 
@@ -387,8 +387,10 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     if len(rfimask)>0:data.data[rfimask] = 0.
 
     if rficlean is True:
-        data.data = cleandata(data.data, threshold_time, threshold_frequency, bin_size, \
-                              n_iter_time, n_iter_frequency, clean_type, wideclean=wideclean)
+        data.data = cleandata(data.data, threshold_time, 
+                              threshold_frequency, bin_size, 
+                              n_iter_time, n_iter_frequency, 
+                              clean_type, wideclean=wideclean)
 
     if subtract_zerodm:
         data.data -= np.mean(data.data, axis=0, keepdims=True)
@@ -727,17 +729,19 @@ if __name__=='__main__':
     else:
         # in SB mode, do grouping over all SBs, then process only the given ones
         if options.sb:
-            sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
-                                                                                   dm_min=options.dm_min,
-                                                                                   dm_max=options.dm_max,
-                                                                                   sig_max=options.sig_max,
-                                                                                   t_window=0.5, read_beam=True)
+            res = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
+                                       dm_min=options.dm_min,
+                                       dm_max=options.dm_max,
+                                       sig_max=options.sig_max,
+                                       t_window=0.5, read_beam=True)
+            sig_cut, dm_cut, tt_cut, ds_cut, sb_cut, ind_full = res
         else:
-            sig_cut, dm_cut, tt_cut, ds_cut, ind_full = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
-                                                                           dm_min=options.dm_min,
-                                                                           dm_max=options.dm_max,
-                                                                           sig_max=options.sig_max,
-                                                                           t_window=0.5, tab=options.tab)
+            res = tools.get_triggers(fn_sp, sig_thresh=options.sig_thresh,
+                                       dm_min=options.dm_min,
+                                       dm_max=options.dm_max,
+                                       sig_max=options.sig_max,
+                                       t_window=0.5, tab=options.tab)
+            sig_cut, dm_cut, tt_cut, ds_cut, ind_full = res
 
     if options.descending_snr:
         sig_index = np.argsort(sig_cut)[::-1]
