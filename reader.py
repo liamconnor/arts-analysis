@@ -11,9 +11,9 @@ import glob
 import pickle
 
 try:
-	import matplotlib.pylab as plt
+    import matplotlib.pylab as plt
 except:
-	pass 
+    pass 
 
 try:
     import filterbank as filterbank_
@@ -40,7 +40,10 @@ def write_snippet(data, fnout, header_fil=None):
         header = read_fil_data(header_fil, start=0, stop=1)[-1]
         write_to_fil(data.transpose(), header, fnout)
 
-def read_fil_data(fn, start=0, stop=1e7):
+def read_fil_data(fn, start=0, stop=1):
+        """ Read in filterbank data object starting 
+        at sample start and reading in chunksize stop.
+        """
 	print("Reading filterbank file %s \n" % fn)
 	fil_obj = filterbank_.FilterbankFile(fn)
 	header = fil_obj.header
@@ -254,8 +257,51 @@ def shuffle_array(data_1, data_2=None):
 
 	return data_1_[:, :-1], data_2
 
+filhdr_Apertif = {'telescope_id': 2,
+      'az_start': 0.0,
+      'nbits': 8,
+      'source_name': 'J1813-1749',
+      'data_type': 1,
+      'nchans': 1536,
+      'machine_id': 15,
+      'tsamp': 8.192e-5,
+      'foff': -0.1953125,
+      'src_raj': 181335.2,
+      'src_dej': -174958.1,
+      'tstart': 58523.3437492,
+      'nbeams': 1,
+      'fch1': 1519.50561523,
+      'za_start': 0.0,
+      'rawdatafile': '',
+      'nifs': 1,
+      #'nsamples': 12500
+      }
 
 
+def create_new_filterbank(fnfil, telescope='Apertif'):
+   if telescope in ('ASKAP', 'Askap', 'askap'):
+      filhdr = filhdr_ASKAP
+   elif telescope in ('Apertif', 'APERTIF', 'apertif'):
+      filhdr = filhdr_Apertif
+   elif telescope in ('CHIME', 'Chime', 'chime'):
+      filhdr = filhdr_CHIME
+   else:
+      raise ValueError("Could not find telescope name")
 
+   try:
+      import sigproc
+      filhdr['rawdatafile'] = fnfil
 
-
+      newhdr = ""
+      newhdr += sigproc.addto_hdr("HEADER_START", None)
+      for k,v in filhdr.items():
+          newhdr += sigproc.addto_hdr(k, v)
+      newhdr += sigproc.addto_hdr("HEADER_END", None)
+      print("Writing new header to '%s'" % fnfil)
+      outfile = open(fnfil, 'wb')
+      outfile.write(newhdr)
+      spectrum = np.zeros([filhdr['nchans']], dtype=np.uint8)
+      outfile.write(spectrum)
+      outfile.close()
+   except:
+      print("Either could not load sigproc or create filterbank")

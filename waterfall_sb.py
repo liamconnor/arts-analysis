@@ -169,6 +169,7 @@ if __name__=='__main__':
         else:
             print('Plotting SB %s' % sb)
 
+        print(fn_fil)
         x = triggers.proc_trigger(fn_fil, options.dm, t0, -1,
                  ndm=options.ndm, mk_plot=True, downsamp=downsamp,
                  beamno=CB, fn_mask=None, nfreq_plot=options.nfreq_plot,
@@ -183,7 +184,7 @@ if __name__=='__main__':
                  n_iter_frequency=options.n_iter_frequency, 
                  clean_type=options.clean_type, freq=options.freq,
                  dumb_mask=not options.no_dumb_mask,
-                 sb_generator=sb_generator, sb=sb)
+                 sb_generator=sb_generator, sb=sb, save_sb_fil=options.save_data)
 
         print("Saved plots to %s/plots/" % options.outdir)
 

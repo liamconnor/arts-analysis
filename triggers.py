@@ -14,8 +14,11 @@ import optparse
 import logging
 from threading import Thread
 
+import reader
+
 try:
     from pypulsar.formats import filterbank, spectra
+    filterbank.terror
 except:
     print("Could not import pypulsar, using filterbank")
     import filterbank
@@ -235,7 +238,7 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
                  bin_size=32, n_iter_time=3, 
                  n_iter_frequency=3, clean_type='time', 
                  freq=1370.0, sb_generator=None, sb=None, 
-                 dumb_mask=True):
+                 dumb_mask=True, save_sb_fil=False):
     """ Locate data within filterbank file (fn_fi)
     at some time t0, and dedisperse to dm0, generating
     plots
@@ -299,6 +302,8 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         prefix_fil = fn_fil
         # get first file
         fn_fil = prefix_fil + '_00.fil'
+        if not os.path.exists(fn_fil):
+            fn_fil = prefix_fil + '00.fil'
     rawdatafile = filterbank.filterbank(fn_fil)
     dfreq_MHz = rawdatafile.header['foff']
 
@@ -369,6 +374,8 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
             if not tab in sb_map:
                 continue
             fname = prefix_fil + '_{:02d}.fil'.format(tab)
+            if not os.path.exists(fname):
+                fname = prefix_fil + '{:02d}.fil'.format(tab)
             load_tab_data(fname, start_bin, chunksize, out=data, tab=tab)
         for thread in threads:
             logging.info("Waiting for loading of {}".format(thread.name))
@@ -385,7 +392,17 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
     else:
         data = rawdatafile.get_spectra(start_bin, chunksize)
 
+    if save_sb_fil:
+        fn_sbfil_out = '%s/data/CB%s_snr%d_dm%d_t0%d_sb%d.fil' % \
+                     (outdir, beamno, sig_cut, dm0, t0, sb)
+        reader.create_new_filterbank(fn_sbfil_out, telescope='Apertif')
+        reader.write_to_fil(data.data.transpose(), rawdatafile.header, fn_sbfil_out)
+#        fil_obj = reader.filterbank_.FilterbankFile(fn_sbfil_out, mode='readwrite')
+#        fil_obj.append_spectra(data.data.transpose())
+#        np.save(fn_fig_out, data.data)
+
     rawdatafile.close()
+
     # apply dumb mask
     if len(rfimask)>0:data.data[rfimask] = 0.
 
