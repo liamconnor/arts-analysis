@@ -22,6 +22,9 @@ SNRtools = tools.SNR_Tools()
 def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
     if dedisp_data_path=='' or not os.path.exists(dedisp_data_path):
         print("No dedispersed file, using %s" % dpath)
+        if len(glob.glob(dpath))==0:
+            print("You still need to generate the SB files! Try -sb")
+            exit()
         arr_list, pulse_sample = pol.make_iquv_arr(dpath, 
                                                    DM=DM, 
                                                    trans=False,
@@ -296,7 +299,6 @@ if __name__ == '__main__':
 
     if inputs.gen_sb or inputs.All:
         print("Generating SB from npy data")
-
         if inputs.polcal or inputs.All:
             folder_polcal = inputs.basedir+'/polcal/'+inputs.src
             print("Generating SB for %s" % folder_polcal)
@@ -306,8 +308,9 @@ if __name__ == '__main__':
         folder = inputs.basedir+'/numpyarr/'
     
         if len(glob.glob(folder+'stokes*_on*'))<4:
-            print("Generating SB for FRB data")
             pol.sb_from_npy(folder, sb=SB, off_src=False)
+        else:
+            print("Wait, no, SB files are already there!")
 
     if inputs.polcal or inputs.All:
         print("Getting bandpass and xy pol solution from %s" % inputs.src)
