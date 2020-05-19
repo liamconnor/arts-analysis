@@ -13,6 +13,7 @@ import time
 
 import tools
 import pol
+import read_IQUV_dada
 
 freq_arr = pol.freq_arr
 pulse_width = 1 # number of samples to sum over
@@ -31,7 +32,8 @@ def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
                                                    RFI_clean=rfimask)
         stokes_arr = np.concatenate(arr_list, axis=0)
         stokes_arr = stokes_arr.reshape(4, pol.NFREQ, -1)
-        stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
+#        stokes_arr = stokes_arr[..., pulse_sample-500:pulse_sample+500]
+        stokes_arr = stokes_arr[..., ]
 
         if type(dedisp_data_path)!='':
             np.save(dedisp_data_path, stokes_arr)
@@ -66,7 +68,8 @@ def get_width(data):
     snr_max, width_max = SNRtools.calc_snr_matchedfilter(data, widths=range(500))
     return snr_max, width_max
 
-def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
+def plot_dedisp(stokes_arr, pulse_sample=None, 
+                pulse_width=1):
     #stokes_arr = stokes_arr[..., :len(stokes_arr[-1])//pulse_width*pulse_width]
     #stokes_arr = stokes_arr.reshape(4, -1, stokes_arr.shape[-1]//pulse_width, pulse_width).mean(-1)
     if pulse_sample is None:
@@ -96,6 +99,24 @@ def plot_dedisp(stokes_arr, pulse_sample=None, pulse_width=1):
     plt.xlim(pulse_sample-50, pulse_sample+50)
     plt.xlabel('Sample number', fontsize=15)
     plt.show()
+
+def create_params_txt(outdir, fndada):
+    """Example dictionary: {BEAM: 25.0,
+       EVENT_BEAM: 68.0, 
+       EVENT_DM: 246.800003,
+       EVENT_SNR: 14.8403,
+       EVENT_WIDTH: 10.0}"""
+#    fname = 'DM588.13_SNR60_CB21_SB37_Width5.txt'
+    event_params = read_IQUV_dada.read_event_params(fndada)
+    vals = (event_params["EVENT_DM"], 
+            event_params["EVENT_SNR"], 
+            event_params["BEAM"], 
+            event_params["EVENT_BEAM"], 
+            event_params["EVENT_WIDTH"])
+    print(event_params)
+    print(vals)
+    fname = 'DM%0.2f_SNR%d_CB%d_SB%d_Width%d.txt' % vals
+    os.system('touch %s/%s' % (outdir, fname))
 
 def check_dirs(fdir):
     """ Expecting: 
@@ -172,11 +193,11 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1):
     """
     time_mid = int(stokes_arr.shape[-1]//2)
 #    stokes_arr = rebin_tf(stokes_arr, tint=fds, fint=tds)
-    stokes_arr_ = stokes_arr[:, :, time_mid-100:time_mid+100]
+    stokes_arr_ = stokes_arr[:,:,time_mid-200:time_mid+200]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,fds,-1).mean(2)
-    stokes_arr_ = stokes_arr_[..., :stokes_arr_.shape[-1]//tds*tds]
+    stokes_arr_ = stokes_arr_[...,:stokes_arr_.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
-
+    print(stokes_arr_.shape)
     for ii in range(4):
         stokes_arr_[ii] -= np.median(stokes_arr_[ii], axis=-1, keepdims=True)
         stokes_arr_[ii] /= np.std(stokes_arr_[ii], axis=-1, keepdims=True)
@@ -268,6 +289,8 @@ if __name__ == '__main__':
         time.sleep(5)
         fndada = glob.glob(inputs.basedir+'/dada/*dada')[0]
         outdir = inputs.basedir+'/numpyarr/'
+        event_params = read_IQUV_dada.read_event_params(fndada)
+        create_params_txt(outdir, fndada)
 
         if len(glob.glob(outdir+'/*npy'))<6:
             print("Converting dada into numpy for %s" % fndada)
