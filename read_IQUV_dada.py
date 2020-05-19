@@ -36,6 +36,22 @@ def is_int(value):
     except ValueError:
         return False    
 
+def read_event_params(fname):
+    fp = open(fname, "r")
+    event_params={}
+    for ii,line in enumerate(fp):
+        if line[:5]=="EVENT" or line[:4]=="BEAM":
+            line_list = line.split(' ')
+            param = line_list[0]
+            for kk in line_list[1:]:
+                if kk=='' or kk=='\n':
+                    continue
+                else:
+                    event_params[param] = np.float(kk)
+        if ii>100:
+            break
+    return event_params
+
 # Parse DADA header
 def read_dada_header(fname, headersize=4096):
     fp = open(fname, "r")
@@ -71,6 +87,7 @@ def read_dada_header(fname, headersize=4096):
                 header[item.lower()] = items[i+1]            
     
     return header
+
 
 def process(dada_filename, outdir='./'):
 
