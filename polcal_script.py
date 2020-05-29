@@ -370,9 +370,13 @@ if __name__ == '__main__':
 
         if os.path.isdir(os.path.join(folder_polcal, inputs.src_linpol)):
             src_linpol = inputs.src_linpol
+        else:
+            print("WARNING: No linearly polarised source")
 
         if os.path.isdir(os.path.join(folder_polcal, inputs.src_unpol)):
             src_unpol = inputs.src_unpol
+        else:
+            print("WARNING: No unpolarised source")
 
         # Defining calibration sources from polcal folder
         # cal_srcs = [src for src in os.listdir(folder_polcal) 
@@ -411,15 +415,16 @@ if __name__ == '__main__':
         if inputs.polcal:
           for src in [src_linpol, src_unpol]:
             if src is not None:
-              print("\n\nGenerating {} on source npy from dada" % src)
-              fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
-              outdir = folder_polcal+'/%s/on/' % src
-              os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
+                print(src) 
+                print("\n\nGenerating {} on source npy from dada" % src)
+                fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
+                outdir = folder_polcal+'/%s/on/' % src
+                os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
 
-              print("\n\nGenerating {} off source npy from dada" % src)
-              fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[0]
-              outdir = folder_polcal+'/%s/off/' % src
-              os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
+                print("\n\nGenerating {} off source npy from dada" % src)
+                fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[0]
+                outdir = folder_polcal+'/%s/off/' % src
+                os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
 
 
     else:
