@@ -368,8 +368,8 @@ if __name__ == '__main__':
         else:
             folder_polcal = inputs.polcal_dir
 
-        if os.path.isdir(os.path.join(folder_polcal, inputs.src_pol)):
-            src_pol = inputs.src_pol
+        if os.path.isdir(os.path.join(folder_polcal, inputs.src_linpol)):
+            src_linpol = inputs.src_linpol
 
         if os.path.isdir(os.path.join(folder_polcal, inputs.src_unpol)):
             src_unpol = inputs.src_unpol
@@ -409,7 +409,7 @@ if __name__ == '__main__':
                       % (fndada, outdir, event_params['MJD']))
 
         if inputs.polcal:
-          for src in [src_pol, src_unpol]:
+          for src in [src_linpol, src_unpol]:
             if src is not None:
               print("\n\nGenerating {} on source npy from dada" % src)
               fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
@@ -449,7 +449,7 @@ if __name__ == '__main__':
     if inputs.gen_sb or inputs.All:
         print("Generating SB=%d from npy data" % SB)
         if inputs.polcal or inputs.All:
-          for src in [src_pol, src_unpol]:
+          for src in [src_linpol, src_unpol]:
             if src is not None:
               print("Generating SB for %s" % src)
               pol.sb_from_npy(folder_polcal+'/%s/on/' % src, sb=35, 
@@ -472,9 +472,9 @@ if __name__ == '__main__':
         #    else:
         #        folder_polcal = inputs.polcal_dir
         print("Polcal folder %s" % folder_polcal)
-        print("Getting bandpass and xy pol solution from %s" % src_pol)
+        print("Getting bandpass and xy pol solution from %s" % src_linpol)
         stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(
-                folder_polcal, src=src_pol, save_sol=True)
+                folder_polcal, src=src_linpol, save_sol=True)
 
     if inputs.gen_arr or inputs.All:
         fnmask = inputs.basedir+'/numpyarr/rfimask'
@@ -554,7 +554,7 @@ if __name__ == '__main__':
 
         print("Calibrating bandpass")
         stokes_arr_cal = pol.bandpass_correct(stokes_arr, fn_bandpass)
-        print("Calibrating xy correlation with %s\n\n" % src_pol)
+        print("Calibrating xy correlation with %s\n\n" % src_linpol)
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
 
