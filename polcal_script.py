@@ -416,12 +416,12 @@ if __name__ == '__main__':
           for src in [src_linpol, src_unpol]:
             if src is not None:
                 print(src) 
-                print("\n\nGenerating {} on source npy from dada" % src)
+                print("\n\nGenerating {} on source npy from dada".format(src))
                 fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
                 outdir = folder_polcal+'/%s/on/' % src
                 os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
 
-                print("\n\nGenerating {} off source npy from dada" % src)
+                print("\n\nGenerating {} off source npy from dada".format(src))
                 fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[0]
                 outdir = folder_polcal+'/%s/off/' % src
                 os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
