@@ -411,9 +411,9 @@ if __name__ == '__main__':
             print(outdir+'/*{}*npy'.format(event_params['MJD']))
             print(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))
 
-            exit()
+#            exit()
             print("Converting dada into numpy for %s" % fndada)
-            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s' 
+            os.system('echo ./read_IQUV_dada.py %s --outdir %s --mjd %s' 
                       % (fndada, outdir, event_params['MJD']))
 
         if inputs.polcal:
