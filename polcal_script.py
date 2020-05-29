@@ -407,11 +407,7 @@ if __name__ == '__main__':
         create_params_txt(outdir, fndada)
 
         #if len(glob.glob(outdir+'/*npy'))<6:
-        if len(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))<6:
-            print(outdir+'/*{}*npy'.format(event_params['MJD']))
-            print(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))
-
-#            exit()
+        if len(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))<10:
             print("Converting dada into numpy for %s" % fndada)
             os.system('echo ./read_IQUV_dada.py %s --outdir %s --mjd %s' 
                       % (fndada, outdir, event_params['MJD']))
