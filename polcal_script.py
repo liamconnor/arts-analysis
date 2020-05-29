@@ -411,6 +411,9 @@ if __name__ == '__main__':
             print("Converting dada into numpy for %s" % fndada)
             os.system('echo ./read_IQUV_dada.py %s --outdir %s --mjd %s' 
                       % (fndada, outdir, event_params['MJD']))
+        else:
+            print("No need to generate numpy from dada for mjd:{} \
+                    because they already exist".format(event_params['MJD']))
 
         if inputs.polcal:
           for src in [src_linpol, src_unpol]:
