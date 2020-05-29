@@ -368,11 +368,11 @@ if __name__ == '__main__':
         else:
             folder_polcal = inputs.polcal_dir
 
-        if os.path.isdir(os.path.join(folder_polcal, options.src_pol)):
-            src_pol = options.src_pol
+        if os.path.isdir(os.path.join(folder_polcal, inputs.src_pol)):
+            src_pol = inputs.src_pol
 
-        if os.path.isdir(os.path.join(folder_polcal, options.src_unpol)):
-            src_unpol = options.src_unpol
+        if os.path.isdir(os.path.join(folder_polcal, inputs.src_unpol)):
+            src_unpol = inputs.src_unpol
 
         # Defining calibration sources from polcal folder
         # cal_srcs = [src for src in os.listdir(folder_polcal) 
