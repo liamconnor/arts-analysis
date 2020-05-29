@@ -229,7 +229,6 @@ def plot_all(stokes_arr, suptitle='', fds=16, tds=1, stokes='IQUV',
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,fds,-1).mean(2)
     stokes_arr_ = stokes_arr_[...,:stokes_arr_.shape[-1]//tds*tds]
     stokes_arr_ = stokes_arr_.reshape(4,1536//fds,-1,tds).mean(-1)
-    print(stokes_arr_.shape)
     for ii in range(4):
         stokes_arr_[ii] -= np.median(stokes_arr_[ii], axis=-1, keepdims=True)
         stokes_arr_[ii] /= np.std(stokes_arr_[ii], axis=-1, keepdims=True)
@@ -409,25 +408,23 @@ if __name__ == '__main__':
         #if len(glob.glob(outdir+'/*npy'))<6:
         if len(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))<10:
             print("Converting dada into numpy for %s" % fndada)
-            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s --nsec 20' 
+            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s --nsec 12' 
                       % (fndada, outdir, event_params['MJD']))
         else:
-            print("No need to generate numpy from dada for mjd:{} \
-                    because they already exist".format(event_params['MJD']))
+            print("No need to make npy for mjd:{}. Already there.".format(event_params['MJD']))
 
         if inputs.polcal:
           for src in [src_linpol, src_unpol]:
             if src is not None:
-                print(src) 
                 print("\n\nGenerating {} on source npy from dada".format(src))
                 fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
                 outdir = folder_polcal+'/%s/on/' % src
-                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 20' % (fndada,outdir))
+                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 12' % (fndada,outdir))
 
                 print("\n\nGenerating {} off source npy from dada".format(src))
                 fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[0]
                 outdir = folder_polcal+'/%s/off/' % src
-                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 20' % (fndada,outdir))
+                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 12' % (fndada,outdir))
 
 
     else:
