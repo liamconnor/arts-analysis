@@ -44,6 +44,10 @@ if __name__=='__main__':
     forked_jobs = []
     os.system('on_all_nodes.sh "mkdir -p %s"' % options.outdir) # in case it does not exist yet
     for ii in range(ncb):
+        # only given CB if argument is provided
+        if options.cb != -1:
+            if ii != options.cb:
+                continue
 #        print("Forking node " + str(ii+1))
 #        os.system('sleep 5')
         child = os.fork()
@@ -61,7 +65,7 @@ if __name__=='__main__':
                     print("You should probably not run this on a host different than arts041! Collect_dir may be incorrect")
                 else: 
 #                   os.system('ansible "arts0%0.2d.apertif" -a "cd %s; ionice scp CB%0.2d*.fil arts041:%s/"' % (ii+1, options.outdir, ii, options.collectdir))               
-                    os.system('mkdir -p %s ; cd %s ; scp arts0%0.2d.apertif:%s/CB%0.2d*.fil .' % (options.collectdir, options.collectdir, ii+1, options.outdir, ii))
+                    os.system('mkdir -p %s ; cd %s ; scp -l 5000 -c blowfish arts0%0.2d.apertif:%s/CB%0.2d*.fil .' % (options.collectdir, options.collectdir, ii+1, options.outdir, ii))
             os._exit(os.EX_OK) # killing this child   
 
     for child in forked_jobs:
