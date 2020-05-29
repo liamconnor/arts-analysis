@@ -445,6 +445,10 @@ def proc_trigger(fn_fil, dm0, t0, sig_cut,
         dm_max_trans = 10. + 5*time_res/0.001 + 10*dm0/1000.
         dm_min_trans = -10. - 5*time_res/0.001 - 10*dm0/1000.
 
+        # Use roughly 3\sigma DMerr in the DM direction
+        dm_max_trans = 2 + 3*time_res/0.001
+        dm_min_trans = -(2 + 3*time_res/0.001)
+        
         if dm0+dm_min_trans<=0:
             dm_min_trans = 0.
             dm_max_trans = 2*dm0
@@ -890,6 +894,12 @@ if __name__=='__main__':
                                         sb=sb, 
                                         freq=options.freq)
 
+        time_elapsed = time.time() - start_time
+
+        if time_elapsed > options.time_limit:
+            logging.info("Exceeded time limit. Breaking loop.")
+            break
+
         if len(data_dm_time)==0:
             skipped_counter += 1
             continue
@@ -931,12 +941,6 @@ if __name__=='__main__':
                     data_sb_full.append(sb)
         else:
             logging.info('Not saving data')
-
-        time_elapsed = time.time() - start_time
-
-        if time_elapsed > options.time_limit:
-            logging.info("Exceeded time limit. Breaking loop.")
-            break
 
     if options.save_data == 'concat':
         if len(data_freq_time_full)==0:
