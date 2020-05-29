@@ -8,6 +8,7 @@ import argparse
 import time
 import multiprocessing
 import tqdm
+from astropy.time import Time
 
 NOF_SUBBANDS = 1536
 
@@ -40,16 +41,23 @@ def read_event_params(fname):
     fp = open(fname, "r")
     event_params={}
     for ii,line in enumerate(fp):
-        if line[:5]=="EVENT" or line[:4]=="BEAM":
+        if line[:5] in ["SOURC", "EVENT", "BEAM ", "MJD_S", "OBS_O", "BYTES"]:
             line_list = line.split(' ')
             param = line_list[0]
             for kk in line_list[1:]:
                 if kk=='' or kk=='\n':
                     continue
                 else:
-                    event_params[param] = np.float(kk)
+                    try:
+                        event_params[param] = np.float(kk)
+                    except ValueError:
+                        event_params[param] = kk.replace('\n','')
         if ii>100:
             break
+    event_params["MJD"] = (event_params["MJD_START"] 
+                        + event_params["OBS_OFFSET"] 
+                        / event_params["BYTES_PER_SECOND"]/(24*3600))
+    event_params["UTC"] = Time(event_params["MJD"], format='mjd').iso
     return event_params
 
 # Parse DADA header
@@ -89,7 +97,7 @@ def read_dada_header(fname, headersize=4096):
     return header
 
 
-def process(dada_filename, outdir='./'):
+def process(dada_filename, outdir='./', mjd=None):
 
     print("Read data from", dada_filename)
     data = read_dada_file(dada_filename, headersize=hdr["hdr_size"])
@@ -166,7 +174,13 @@ def process(dada_filename, outdir='./'):
             print("TAB{:02d} Stokes {}".format(tab, stokes))
             iquv_nr, iquv_type = iquv[stokes]
             # save freq-time array
-            np.save(outdir+"stokes{}_tab{:02d}".format(stokes, tab), all_data[tab, :, :, iquv_nr].astype(iquv_type).T)
+            #np.save(outdir+"stokes{}_tab{:02d}".format(stokes, tab), all_data[tab, :, :, iquv_nr].astype(iquv_type).T)
+            if mjd is not None:
+                np.save(outdir+"stokes{}_tab{:02d}_mjd{}".format(stokes, tab, mjd),
+                        all_data[tab, :, :, iquv_nr].astype(iquv_type).T)
+            else:
+                np.save(outdir+"stokes{}_tab{:02d}".format(stokes, tab),
+                        all_data[tab, :, :, iquv_nr].astype(iquv_type).T)
 
     #for stokes_param in args.iquv:
         #stokes_param_to_plot = stokes_param.upper()
@@ -231,12 +245,13 @@ if __name__ == "__main__":
     parser.add_argument("--nsec", type=int, help="Number of pages to process")
     parser.add_argument("--tab", type=int, help="Which TAB to process (Default: all)")
     parser.add_argument("--outdir", type=str, default='./', help="Output directory")
+    parser.add_argument("--mjd", type=float, default=None, help="MJD of the event")
     args = parser.parse_args()
 
     dada_filename = args.filename
     hdr = read_dada_header(dada_filename)
     print(hdr)
-    process(dada_filename, outdir=args.outdir)
+    process(dada_filename, outdir=args.outdir, mjd=args.mjd)
 
     time_read_data_done = time.time()
     print("Time to read & process data:", time_read_data_done - time_start, "seconds")
