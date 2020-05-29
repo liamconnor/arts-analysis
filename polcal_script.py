@@ -409,7 +409,7 @@ if __name__ == '__main__':
         #if len(glob.glob(outdir+'/*npy'))<6:
         if len(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))<10:
             print("Converting dada into numpy for %s" % fndada)
-            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s' 
+            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s --nsec 20' 
                       % (fndada, outdir, event_params['MJD']))
         else:
             print("No need to generate numpy from dada for mjd:{} \
@@ -422,12 +422,12 @@ if __name__ == '__main__':
                 print("\n\nGenerating {} on source npy from dada".format(src))
                 fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
                 outdir = folder_polcal+'/%s/on/' % src
-                os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
+                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 20' % (fndada,outdir))
 
                 print("\n\nGenerating {} off source npy from dada".format(src))
                 fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[0]
                 outdir = folder_polcal+'/%s/off/' % src
-                os.system('./read_IQUV_dada.py %s --outdir %s' % (fndada,outdir))
+                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 20' % (fndada,outdir))
 
 
     else:
