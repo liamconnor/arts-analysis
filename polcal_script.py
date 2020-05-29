@@ -409,7 +409,7 @@ if __name__ == '__main__':
         #if len(glob.glob(outdir+'/*npy'))<6:
         if len(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))<10:
             print("Converting dada into numpy for %s" % fndada)
-            os.system('echo ./read_IQUV_dada.py %s --outdir %s --mjd %s' 
+            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s' 
                       % (fndada, outdir, event_params['MJD']))
         else:
             print("No need to generate numpy from dada for mjd:{} \
