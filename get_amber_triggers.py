@@ -99,14 +99,13 @@ if __name__=='__main__':
 
         if do_scp:
             os.system('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
-            print('scp arts0%0.2d:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))
+#            os.system('echo scp arts0{:0.2d}:/data2/output/%s/amber/CB%0.2d.trigger %s' % (ii+1,directory,ii,outdir))y
             fn = outdir + 'CB%0.2d.trigger' % ii
 
         if not os.path.isfile(fn):
             print("Input file does not exist")
             continue
 
-        print(fn, ii, ii+1)
         dm, sig, tt, downsample, beam = tools.read_singlepulse(fn, beam='all')
 
         if len(dm)==0:
