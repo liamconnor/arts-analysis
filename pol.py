@@ -65,7 +65,7 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
 #        arr = arr.reshape(nf//rebin_freq, rebin_freq, 
 #                          nt//rebin_time, rebin_time).mean(1).mean(-1)
         arr_list.append(arr)
-
+    
     pulse_sample = np.argmax(arr_list[0].mean(0))
 
     return arr_list, pulse_sample
@@ -78,13 +78,16 @@ def get_bandpass(stokes_I, alpha=0.51, freq=(1219.70092773,1519.50561523)):
     bandpass = stokes_I*(freq_arr/1370.0)**alpha
     return bandpass
 
-def sb_from_npy(folder, sb=35, off_src=False):
+def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
     # get sb map                                                                                         
     sbgen = SBGenerator.from_science_case(4)
     sbmap = sbgen.get_map(sb)
-    # read first file to get shape                                                                       
-    shape = np.load('{}/stokesI_tab00.npy'.format(folder)).shape
-    
+    # read first file to get shape
+    if mjd is not None:
+        shape = np.load('{}/stokesI_tab00_mjd{:6f}.npy'.format(folder, mjd)).shape
+    else:
+        shape = np.load('{}/stokesI_tab00.npy'.format(folder)).shape    
+
     # init full array                                                                                    
     data_full = np.zeros((12, shape[0], shape[1]))
 
@@ -93,35 +96,52 @@ def sb_from_npy(folder, sb=35, off_src=False):
         for tab in set(sbmap):
             print("Loading TAB{:02d}".format(tab))
             if off_src:
-                fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
+                if mjd is not None:
+                    fn = '{}/stokes{}_tab{:02d}_mjd{:.6f}.npy'.format(folder, stokes, tab, mjd)
+                else:
+                    fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
             else:
-                fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
+                if mjd is not None:
+                    fn = '{}/stokes{}_tab{:02d}_mjd{:.6f}.npy'.format(folder, stokes, tab, mjd)
+                else:
+                    fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
             data = np.load(fn)
             data_full[tab] = data
         if off_src:
-            fnout = 'stokes{}_sb_off'.format(stokes, sb)
+            if mjd is not None:
+                fnout = 'stokes{}_mjd{:.6f}_sb{}_off'.format(stokes, mjd, sb)
+            else:
+                fnout = 'stokes{}_sb{}_off'.format(stokes, sb)
         else:
-            fnout = 'stokes{}_sb_on'.format(stokes, sb)
+            if mjd is not None:
+                fnout = 'stokes{}_mjd{:.6f}_sb{}_on'.format(stokes, mjd, sb)
+            else:
+                fnout = 'stokes{}_sb{}_on'.format(stokes, sb)
         # get sb                                                                                         
         sbdata = sbgen.synthesize_beam(data_full, sb)
         np.save(folder+fnout, sbdata[:])
 
-def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
+def calibrate_nonswitch(basedir, src='3C286', sb=35, save_sol=True):
     """ This function should get both bandpass calibration and 
     a polarisation calibration from some point source (usually 3C286)
     """
     alpha_dict = {'3C286' : 0.51,
                   '3C147' : 0.66}
-    fn_spec = basedir+'/polcal/stokes_uncal_spectra.npy'
+    fn_spec = basedir+'/stokes_uncal_spectra.npy'
 
     if os.path.exists(fn_spec):
         stokes_arr_spec = np.load(fn_spec)
     else:
         stokes_arr_spec = np.zeros([4, NFREQ])
         for ii, ss in enumerate(stokes_ps):
-            don = np.load(basedir+'/polcal/%s/on/stokes%s_sb_on.npy' % (src, ss))
+            print(basedir)
+            print(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src, ss, sb))
+            don = np.load(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src,
+                    ss, sb))
             try:
-                doff = np.load(basedir+'/polcal/%s/off/stokes%s_sb_off.npy' % (src, ss))
+                doff = np.load(basedir 
+                        +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src, 
+                        ss, sb))
             except:
                 print("There is no polcal off npy file")
                 doff = 0*don
@@ -146,8 +166,8 @@ def calibrate_nonswitch(basedir, src='3C286', save_sol=True):
     bandpass = get_bandpass(I, alpha=alpha_dict[src])
 
     if save_sol:
-        np.save(basedir+'/polcal/bandpass.npy', bandpass)
-        np.save(basedir+'/polcal/xy_phase.npy', np.angle(xy))
+        np.save(basedir+'/bandpass.npy', bandpass)
+        np.save(basedir+'/xy_phase.npy', np.angle(xy))
 
     return stokes_arr_spec, bandpass, np.angle(xy)
 
