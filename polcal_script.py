@@ -340,8 +340,10 @@ if __name__ == '__main__':
                         default='iquv', type=str)
     parser.add_argument('-pcd', '--polcal_dir',
                         help='path to polcal files', default=None, type=str)
-    parser.add_argument('-src', '--src', help='calibrator source name', 
+    parser.add_argument('-src_linpol', '--src_linpol', help='calibrator source name', 
                         default='3C286', type=str)
+    parser.add_argument('-src_unpol', '--src_unpol', help='calibrator source name', 
+                        default='3C147', type=str)
     parser.add_argument('-rmmin', '--rmmin', help='min RM to search', 
                         default=-1e4, type=float)
     parser.add_argument('-rmmax', '--rmmax', help='max RM to search', 
@@ -366,21 +368,27 @@ if __name__ == '__main__':
         else:
             folder_polcal = inputs.polcal_dir
 
+        if os.path.isdir(os.path.join(folder_polcal, options.src_pol)):
+            src_pol = options.src_pol
+
+        if os.path.isdir(os.path.join(folder_polcal, options.src_unpol)):
+            src_unpol = options.src_unpol
+
         # Defining calibration sources from polcal folder
-        cal_srcs = [src for src in os.listdir(folder_polcal) 
-                if os.path.isdir(os.path.join(folder_polcal, src))]
+        # cal_srcs = [src for src in os.listdir(folder_polcal) 
+        #         if os.path.isdir(os.path.join(folder_polcal, src))]
 
-        if '3C286' in cal_srcs:
-            src_pol = '3C286'
-        else:
-            print("WARNING: No polarised source")
-            src_pol = None
+        # if '3C286' in cal_srcs:
+        #     src_pol = '3C286'
+        # else:
+        #     print("WARNING: No polarised source")
+        #     src_pol = None
 
-        if '3C147' in cal_srcs:
-            src_unpol = '3C147'
-        else:
-            print("WARNING: No unpolarised source")
-            src_unpol = None
+        # if '3C147' in cal_srcs:
+        #     src_unpol = '3C147'
+        # else:
+        #     print("WARNING: No unpolarised source")
+        #     src_unpol = None
 
     if inputs.dada or inputs.All:
         print("ARE YOU SURE YOU WANT TO USE ALL THAT MEMORY for dada writer?")
