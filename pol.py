@@ -121,20 +121,64 @@ def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
         sbdata = sbgen.synthesize_beam(data_full, sb)
         np.save(folder+fnout, sbdata[:])
 
-def calibrate_nonswitch(basedir, src='3C286', sb=35, save_sol=True):
-    """ This function should get both bandpass calibration and 
-    a polarisation calibration from some point source (usually 3C286)
-    """
-    alpha_dict = {'3C286' : 0.51,
-                  '3C147' : 0.66}
-    fn_spec = basedir+'/stokes_uncal_spectra.npy'
+def calibrate_GxGy(folder_polcal, src='3C147', save_sol=True):
+    fn_spec = basedir+'/stokes_uncal_spectra{}.npy'.format(src)
 
     if os.path.exists(fn_spec):
         stokes_arr_spec = np.load(fn_spec)
     else:
         stokes_arr_spec = np.zeros([4, NFREQ])
         for ii, ss in enumerate(stokes_ps):
-            print(basedir)
+            print(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src, ss, sb))
+            don = np.load(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src,
+                    ss, sb))
+            try:
+                doff = np.load(basedir 
+                        +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src, 
+                        ss, sb))
+            except:
+                print("There is no polcal off npy file")
+                doff = 0*don
+        # arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
+        #                                            rebin_freq=1, dm=0, trans=False,
+        #                                            RFI_clean=True)
+        # stokes_arr = np.concatenate(arr_list, axis=0)
+        # stokes_arr = stokes_arr.reshape(4, NFREQ, -1)
+        # stokes_arr_spec = stokes_arr.mean(-1)
+            stokes_arr_spec[ii] = don.mean(-1)-doff.mean(-1)
+
+        if save_sol:
+            np.save(fn_spec, stokes_arr_spec)
+
+    I = stokes_arr_spec[0]
+    Q = stokes_arr_spec[1]
+    U = stokes_arr_spec[2]
+    V = stokes_arr_spec[3]
+
+    xy = U + 1j*V
+
+    bandpass = get_bandpass(I, alpha=alpha_dict[src])
+
+    if save_sol:
+        np.save(basedir+'/bandpass.npy', bandpass)
+        np.save(basedir+'/xy_phase.npy', np.angle(xy))
+
+    return stokes_arr_spec, bandpass, np.angle(xy)
+
+def calibrate_linpol(basedir, src='3C286', sb=35, save_sol=True):
+    """ This function should get both bandpass calibration and 
+        a polarisation calibration from some linearly polarised 
+        point source (usually 3C286)
+    """
+    alpha_dict = {'3C286' : 0.51,
+                  '3C147' : 0.66}
+    fn_spec = basedir+'/stokes_uncal_spectra{}.npy'.format(src)
+
+    if os.path.exists(fn_spec):
+        stokes_arr_spec = np.load(fn_spec)
+    else:
+        stokes_arr_spec = np.zeros([4, NFREQ])
+        for ii, ss in enumerate(stokes_ps):
             print(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src, ss, sb))
             don = np.load(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src,
                     ss, sb))
