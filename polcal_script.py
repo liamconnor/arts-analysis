@@ -339,9 +339,11 @@ if __name__ == '__main__':
                         default='iquv', type=str)
     parser.add_argument('-pcd', '--polcal_dir',
                         help='path to polcal files', default=None, type=str)
-    parser.add_argument('-src_linpol', '--src_linpol', help='calibrator source name', 
+    parser.add_argument('-src_linpol', '--src_linpol', 
+                        help='linearly polarised calibrator source name', 
                         default='3C286', type=str)
-    parser.add_argument('-src_unpol', '--src_unpol', help='calibrator source name', 
+    parser.add_argument('-src_unpol', '--src_unpol', 
+                        help='unpolarised calibrator source name', 
                         default='3C147', type=str)
     parser.add_argument('-rmmin', '--rmmin', help='min RM to search', 
                         default=-1e4, type=float)
