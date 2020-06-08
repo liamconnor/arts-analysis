@@ -5,7 +5,12 @@ import matplotlib.pylab as plt
 import glob 
 import matplotlib.pylab as plt
 
-from darc.sb_generator import SBGenerator
+try:
+    from darc.sb_generator import SBGenerator
+except:
+    print("Could not load DARC")
+    SBGenerator = None
+
 import tools
 
 stokes_ps = ['I', 'Q', 'U', 'V']
@@ -84,9 +89,20 @@ def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
     sbmap = sbgen.get_map(sb)
     # read first file to get shape
     if mjd is not None:
-        shape = np.load('{}/stokesI_tab00_mjd{:6f}.npy'.format(folder, mjd)).shape
+        fn_ = '{}/stokesI_tab00_mjd{:6f}.npy'.format(folder, mjd)
+        shape = np.load(fn_).shape
+        if os.path.exists(fn_):
+            shape = np.load(fn_).shape
+        else:
+            print("{} does not exist".format(fn_))
+            exit()
     else:
-        shape = np.load('{}/stokesI_tab00.npy'.format(folder)).shape    
+        fn_ = '{}/stokesI_tab00.npy'.format(folder)
+        if os.path.exists(fn_):
+            shape = np.load(fn_).shape
+        else:
+            print("{} does not exist".format(fn_))
+            exit()
 
     # init full array                                                                                    
     data_full = np.zeros((12, shape[0], shape[1]))
@@ -139,12 +155,7 @@ def calibrate_GxGy(folder_polcal, src='3C147', save_sol=True):
             except:
                 print("There is no polcal off npy file")
                 doff = 0*don
-        # arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
-        #                                            rebin_freq=1, dm=0, trans=False,
-        #                                            RFI_clean=True)
-        # stokes_arr = np.concatenate(arr_list, axis=0)
-        # stokes_arr = stokes_arr.reshape(4, NFREQ, -1)
-        # stokes_arr_spec = stokes_arr.mean(-1)
+
             stokes_arr_spec[ii] = don.mean(-1)-doff.mean(-1)
 
         if save_sol:
@@ -156,8 +167,6 @@ def calibrate_GxGy(folder_polcal, src='3C147', save_sol=True):
     V = stokes_arr_spec[3]
 
     xy = U + 1j*V
-
-    bandpass = get_bandpass(I, alpha=alpha_dict[src])
 
     if save_sol:
         np.save(basedir+'/bandpass.npy', bandpass)
@@ -179,9 +188,9 @@ def calibrate_linpol(basedir, src='3C286', sb=35, save_sol=True):
     else:
         stokes_arr_spec = np.zeros([4, NFREQ])
         for ii, ss in enumerate(stokes_ps):
-            print(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src, ss, sb))
-            don = np.load(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src,
-                    ss, sb))
+            fn_=basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src, ss, sb)
+            assert os.path.exists(fn_), "Missing {}. Try using -sb?".format(fn_)
+            don = np.load(fn_)
             try:
                 doff = np.load(basedir 
                         +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src, 
