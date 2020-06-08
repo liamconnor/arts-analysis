@@ -410,24 +410,30 @@ if __name__ == '__main__':
         #if len(glob.glob(outdir+'/*npy'))<6:
         if len(glob.glob(outdir+'/*{}*npy'.format(event_params['MJD'])))<10:
             print("Converting dada into numpy for %s" % fndada)
-            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s --nsec 12' 
+            os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s --nsec 6' 
                       % (fndada, outdir, event_params['MJD']))
         else:
-            print("No need to make npy for mjd:{}. Already there.".format(event_params['MJD']))
+            print("No need to make npy for mjd:{}. \
+            Already there.".format(event_params['MJD']))
 
         if inputs.polcal:
           for src in [src_linpol, src_unpol]:
             if src is not None:
-                print("\n\nGenerating {} on source npy from dada".format(src))
-                fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[0]
+                fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[1]
                 outdir = folder_polcal+'/%s/on/' % src
-                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 12' % (fndada,outdir))
+                if len(glob.glob(outdir+'/stokesQ*npy'))>9:
+                    print("\nThe on src npy files for polcal already exist")
+                else:
+                    print("    Generating {} on source npy from dada".format(src))
+                    os.system('./read_IQUV_dada.py %s --outdir %s --nsec 6' % (fndada,outdir))
 
-                print("\n\nGenerating {} off source npy from dada".format(src))
-                fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[0]
+                fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[1]
                 outdir = folder_polcal+'/%s/off/' % src
-                os.system('./read_IQUV_dada.py %s --outdir %s --nsec 12' % (fndada,outdir))
-
+                if len(glob.glob(outdir+'/stokesQ*tab*npy'))>9:
+                    print("The off src npy files for polcal already exist")
+                else:
+                    print("    Generating {} off source npy from dada".format(src))
+                    os.system('./read_IQUV_dada.py %s --outdir %s --nsec 6' % (fndada,outdir))
 
     else:
         fndada_all = glob.glob(inputs.basedir+'/dada/*dada')
@@ -448,10 +454,10 @@ if __name__ == '__main__':
     MJD = event_params["MJD"]
     obs_name = event_params["SOURCE"]
 
-    print("\tSOURCE = {}".format(obs_name))
+    print("\n\tSOURCE = {}".format(obs_name))
     print("\tDM     = {}".format(DM))
     print("\tSB     = {}".format(SB))
-    print("\tMJD    = {}".format(MJD))
+    print("\tMJD    = {}\n".format(MJD))
 
     if inputs.gen_sb or inputs.All:
         print("Generating SB=%d from npy data" % SB)
@@ -480,8 +486,8 @@ if __name__ == '__main__':
         #        folder_polcal = inputs.polcal_dir
         print("Polcal folder %s" % folder_polcal)
         print("Getting bandpass and xy pol solution from %s" % src_linpol)
-        stokes_arr_spec, bandpass, xy_phase = pol.calibrate_nonswitch(
-                folder_polcal, src=src_linpol, save_sol=True)
+        stokes_arr_spec, bandpass, xy_phase = pol.calibrate_linpol(
+             folder_polcal, src=src_linpol, save_sol=True)
 
     if inputs.gen_arr or inputs.All:
         fnmask = inputs.basedir+'/numpyarr/rfimask'
@@ -523,7 +529,7 @@ if __name__ == '__main__':
     try:
         stokes_arr
     except:
-        print('stokes_arr not defined')
+        print('stokes_arr not defined. Need the FRB data. Try -g?')
         exit()
 
     if inputs.mk_plot or inputs.All:
@@ -538,7 +544,8 @@ if __name__ == '__main__':
         except NameError:
            print("Cannot plot data if there is no stokes array")
            exit()
-        plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
+        if not inputs.polcal:
+            plot_dedisp(stokes_arr, pulse_sample=pulse_sample, 
                     pulse_width=width_max, stokes=inputs.stokes, 
                     params=event_params, outdir=plotdir)
 
@@ -554,13 +561,16 @@ if __name__ == '__main__':
         fn_GxGy = folder_polcal+'/GxGy_ratio_freq.npy'
 
         if os.path.exists(fn_GxGy):
-            print("\n\nRemoving XY gain difference")
+            print("\nRemoving XY gain difference")
             stokes_arr_cal, fGxGy = pol.unleak_IQ(stokes_arr.copy(), fn_GxGy)
         else:
-            stokes_arr_cal = stokes_arr.copy()
+            print("\nCalculating XY gain difference")
+            pol.xy_gain_ratio(stokes_arr.copy(), fn_GxGy)
+            stokes_arr_cal, fGxGy = pol.unleak_IQ(stokes_arr.copy(), fn_GxGy)
+            print("Removing XY gain difference\n")
 
         print("Calibrating bandpass")
-        stokes_arr_cal = pol.bandpass_correct(stokes_arr, fn_bandpass)
+        stokes_arr_cal = pol.bandpass_correct(stokes_arr_cal, fn_bandpass)
         print("Calibrating xy correlation with %s\n\n" % src_linpol)
         stokes_arr_cal = pol.xy_correct(stokes_arr_cal, fn_xy_phase, 
                                     plot=inputs.mk_plot, clean=True)
@@ -580,7 +590,7 @@ if __name__ == '__main__':
         #         pulse_sample=pulse_sample, pulse_width=8)
         try:
            stokes_arr_cal
-           plot_all(stokes_arr_cal, suptitle='xy-Calibrated', 
+           plot_all(stokes_arr_cal, suptitle='Calibrated', 
                     fds=inputs.freq_downsample, tds=inputs.time_downsample,
                     stokes=inputs.stokes, params=event_params, outdir=plotdir)
            # mk_pol_plot(stokes_arr_cal.reshape(4, 1536//1, 1, -1).mean(-2), 
@@ -604,11 +614,11 @@ if __name__ == '__main__':
         pulse_sample = np.argmax(stokes_vec[0].mean(0))
         stokes_vec = stokes_vec[..., pulse_sample]
 
-        if inputs.mk_plot:
-            plot_all(stokes_arr, suptitle='Uncalibrated', 
-                     fds=inputs.freq_downsample, 
-                     tds=inputs.time_downsample,
-                     stokes=inputs.stokes, params=event_params, outdir=plotdir)
+#        if inputs.mk_plot:
+#            plot_all(stokes_arr, suptitle='Uncalibrated', 
+#                     fds=inputs.freq_downsample, 
+#                     tds=inputs.time_downsample,
+#                     stokes=inputs.stokes, params=event_params, outdir=plotdir)
 
         if not inputs.polcal:
             Ucal, Vcal, xy_cal, phi_xy = pol.derotate_UV(stokes_vec[2], 
