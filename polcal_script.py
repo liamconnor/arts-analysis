@@ -52,6 +52,7 @@ def generate_iquv_arr(dpath, dedisp_data_path='', DM=0, rfimask=None):
         exit()
     for ii in range(4):
          ind = np.where(stokes_arr[ii]!=0)[0]
+         print(stokes_arr[ii][ind].shape)
          sigstokes = np.std(np.mean(stokes_arr[ii][ind], axis=0))
          stokes_arr[ii] /= sigstokes
 
@@ -77,11 +78,12 @@ def plot_dedisp(stokes_arr, pulse_sample=None, stokes='iquv',
     if pulse_sample is None:
         pulse_sample = np.argmax(stokes_arr[0].mean(0))
     
-    I = stokes_arr[0]
-    Q = stokes_arr[1]
-    U = stokes_arr[2]
-    V = stokes_arr[3]
-    L = np.sqrt(Q**2 + U**2)
+    I  = stokes_arr[0]
+    Q  = stokes_arr[1]
+    U  = stokes_arr[2]
+    V  = stokes_arr[3]
+    L  = np.sqrt(Q**2 + U**2)
+    PA = np.angle(np.mean(Q+1j*U,0))
     Ptotal = np.sqrt((Q-np.mean(Q))**2 + (U-np.mean(U))**2 + 
              (V-np.mean(V))**2).mean(0)
     Ptotal -= np.median(Ptotal)
@@ -339,6 +341,9 @@ if __name__ == '__main__':
                         default='iquv', type=str)
     parser.add_argument('-pcd', '--polcal_dir',
                         help='path to polcal files', default=None, type=str)
+    parser.add_argument('-dm', '--dm',
+                        help='use this DM instead of the .dada trigger dm', 
+                        default=None, type=float)
     parser.add_argument('-src_linpol', '--src_linpol', 
                         help='linearly polarised calibrator source name', 
                         default='3C286', type=str)
@@ -355,12 +360,20 @@ if __name__ == '__main__':
                         help='downsample in freq', default=1, type=int)
     parser.add_argument('-b', '--burst_number', help='burst number',
                         default=0, type=int)
+    parser.add_argument('-bpc', '--obs_number_pc', help='polcal file number to process',
+                        default=0, type=int)
 
     
     inputs = parser.parse_args()
     #obs_name = inputs.basedir.split('/')[4]
 
     check_dirs(inputs.basedir)
+
+    print(inputs.polcal_dir, inputs.polcal)
+
+    if inputs.polcal_dir is not None:
+        if inputs.polcal is False:
+            inputs.polcal = True
 
     if inputs.polcal or inputs.All:
         # Defining polcal directory
@@ -372,11 +385,13 @@ if __name__ == '__main__':
         if os.path.isdir(os.path.join(folder_polcal, inputs.src_linpol)):
             src_linpol = inputs.src_linpol
         else:
+            src_linpol = None
             print("WARNING: No linearly polarised source")
 
         if os.path.isdir(os.path.join(folder_polcal, inputs.src_unpol)):
             src_unpol = inputs.src_unpol
         else:
+            src_unpol = None
             print("WARNING: No unpolarised source")
 
         # Defining calibration sources from polcal folder
@@ -397,7 +412,7 @@ if __name__ == '__main__':
 
     if inputs.dada or inputs.All:
         print("ARE YOU SURE YOU WANT TO USE ALL THAT MEMORY for dada writer?")
-        print("Sleeping for 5 seconds to let you decide.")
+        print("Sleeping for 5 seconds to let you decide.\n")
         time.sleep(5)
         fndada_all = glob.glob(inputs.basedir+'/dada/*dada')
         fndada_all.sort()
@@ -413,27 +428,27 @@ if __name__ == '__main__':
             os.system('./read_IQUV_dada.py %s --outdir %s --mjd %s --nsec 6' 
                       % (fndada, outdir, event_params['MJD']))
         else:
-            print("No need to make npy for mjd:{}. \
+            print("No need to make FRB npy for mjd:{}. \
             Already there.".format(event_params['MJD']))
 
         if inputs.polcal:
           for src in [src_linpol, src_unpol]:
             if src is not None:
-                fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[1]
+                fndada = glob.glob(folder_polcal + '/%s/on/*dada' % src)[inputs.obs_number_pc]
                 outdir = folder_polcal+'/%s/on/' % src
                 if len(glob.glob(outdir+'/stokesQ*npy'))>9:
                     print("\nThe on src npy files for polcal already exist")
                 else:
                     print("    Generating {} on source npy from dada".format(src))
-                    os.system('./read_IQUV_dada.py %s --outdir %s --nsec 6' % (fndada,outdir))
+                    os.system('./read_IQUV_dada.py %s --outdir %s --nsec 3' % (fndada,outdir))
 
-                fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[1]
+                fndada = glob.glob(folder_polcal+'/%s/off/*dada' % src)[inputs.obs_number_pc]
                 outdir = folder_polcal+'/%s/off/' % src
                 if len(glob.glob(outdir+'/stokesQ*tab*npy'))>9:
                     print("The off src npy files for polcal already exist")
                 else:
                     print("    Generating {} off source npy from dada".format(src))
-                    os.system('./read_IQUV_dada.py %s --outdir %s --nsec 6' % (fndada,outdir))
+                    os.system('./read_IQUV_dada.py %s --outdir %s --nsec 3' % (fndada,outdir))
 
     else:
         fndada_all = glob.glob(inputs.basedir+'/dada/*dada')
@@ -449,7 +464,11 @@ if __name__ == '__main__':
         print("e.g. numpyarr/DM588.13_MJDXXX.XXX_SNR60_CB21_SB37_Width5.txt")
         exit()
 
-    DM = event_params["EVENT_DM"]
+    if inputs.dm is None:
+        DM = event_params["EVENT_DM"]
+    else:
+        DM = inputs.dm
+
     SB = int(event_params["EVENT_BEAM"])
     MJD = event_params["MJD"]
     obs_name = event_params["SOURCE"]
@@ -474,6 +493,7 @@ if __name__ == '__main__':
     
         #if len(glob.glob(folder+'stokes*_on*'))<4:
         if len(glob.glob(folder+'stokes*{}*_on*'.format(MJD)))<4:
+            print(folder)
             pol.sb_from_npy(folder, sb=SB, off_src=False, mjd=MJD)
         else:
             print("Wait, no, SB files are already there!")
