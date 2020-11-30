@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import matplotlib.pylab as plt
-import glob 
+import glob
 import matplotlib.pylab as plt
 
 try:
@@ -24,24 +24,28 @@ dt = 8.192e-5
 rebin_time=1
 rebin_freq=1
 
-def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, 
-                  DM=0.0, trans=True, RFI_clean=None):
-    """ Read in all 4 arrays, dedisperse, 
-    return list with median-subtracted, rebinned 
+def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
+                  DM=0.0, trans=True, RFI_clean=None, mjd=None):
+    """ Read in all 4 arrays, dedisperse,
+    return list with median-subtracted, rebinned
     [arr_I, arr_Q, arr_U, arr_V]
 
     Parameters
     ----------
-    dpath : str 
+    dpath : str
         data path with .npy IQUV files
     """
     if type(dpath)==str:
-        flist = glob.glob(dpath)
+        if mjd is not None:
+            flist = glob.glob(dpath + '/*mjd{}*'.format(mjd))
+        else:
+            flist = glob.glob(dpath)
     else:
         flist = dpath
 
     flist.sort() # should be IQUV ordered now
     arr_list = []
+    print("IQUV arrays:", flist)
 
     if type(RFI_clean)==str:
         mask = (np.loadtxt(RFI_clean)).astype(int)
@@ -60,23 +64,24 @@ def make_iquv_arr(dpath, rebin_time=1, rebin_freq=1,
             print("Are you sure you wanted to transpose?")
 
         if RFI_clean:
-            arr = tools.cleandata(arr, clean_type='perchannel')
+            print("CLEANING RFI")
+            arr = tools.cleandata(arr, clean_type='perchannel', n_iter_time=3)
             arr[mask] = 0.0
 
-        arr = tools.dedisperse(arr, DM, freq=freq)[:, :last_ind]
+        arr = tools.dedisperse(arr, DM, freq=freq, K=1/2.410e-4)[:, :last_ind]
         nt, nf = arr.shape[-1], arr.shape[0]
 #        arr = arr - np.median(arr, axis=-1, keepdims=True)
 #        arr = arr[:nf//rebin_freq*rebin_freq, :nt//rebin_time*rebin_time]
-#        arr = arr.reshape(nf//rebin_freq, rebin_freq, 
+#        arr = arr.reshape(nf//rebin_freq, rebin_freq,
 #                          nt//rebin_time, rebin_time).mean(1).mean(-1)
         arr_list.append(arr)
-    
+
     pulse_sample = np.argmax(arr_list[0].mean(0))
 
     return arr_list, pulse_sample
 
 def get_bandpass(stokes_I, alpha=0.51, freq=(1219.70092773,1519.50561523)):
-    """ Get bandpass from calibration observation. 
+    """ Get bandpass from calibration observation.
     alpha is powerlaw index, default is 0.51 for 3C286
     """
     freq_arr = np.linspace(freq[0], freq[1], NFREQ)
@@ -84,12 +89,13 @@ def get_bandpass(stokes_I, alpha=0.51, freq=(1219.70092773,1519.50561523)):
     return bandpass
 
 def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
-    # get sb map                                                                                         
+    # get sb map
     sbgen = SBGenerator.from_science_case(4)
     sbmap = sbgen.get_map(sb)
     # read first file to get shape
     if mjd is not None:
-        fn_ = '{}/stokesI_tab00_mjd{:6f}.npy'.format(folder, mjd)
+        print(mjd)
+        fn_ = '%s/stokesI_tab00_mjd%0.7f.npy' % (folder, mjd)
         shape = np.load(fn_).shape
         if os.path.exists(fn_):
             shape = np.load(fn_).shape
@@ -104,7 +110,7 @@ def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
             print("{} does not exist".format(fn_))
             exit()
 
-    # init full array                                                                                    
+    # init full array
     data_full = np.zeros((12, shape[0], shape[1]))
 
     for stokes in 'IQUV':
@@ -113,12 +119,12 @@ def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
             print("Loading TAB{:02d}".format(tab))
             if off_src:
                 if mjd is not None:
-                    fn = '{}/stokes{}_tab{:02d}_mjd{:.6f}.npy'.format(folder, stokes, tab, mjd)
+                    fn = '{}/stokes{}_tab{:02d}_mjd{:.7f}.npy'.format(folder, stokes, tab, mjd)
                 else:
                     fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
             else:
                 if mjd is not None:
-                    fn = '{}/stokes{}_tab{:02d}_mjd{:.6f}.npy'.format(folder, stokes, tab, mjd)
+                    fn = '{}/stokes{}_tab{:02d}_mjd{:.7f}.npy'.format(folder, stokes, tab, mjd)
                 else:
                     fn = '{}/stokes{}_tab{:02d}.npy'.format(folder, stokes, tab)
             data = np.load(fn)
@@ -133,12 +139,12 @@ def sb_from_npy(folder, sb=35, off_src=False, mjd=None):
                 fnout = 'stokes{}_mjd{:.6f}_sb{}_on'.format(stokes, mjd, sb)
             else:
                 fnout = 'stokes{}_sb{}_on'.format(stokes, sb)
-        # get sb                                                                                         
+        # get sb
         sbdata = sbgen.synthesize_beam(data_full, sb)
         np.save(folder+fnout, sbdata[:])
 
 def calibrate_GxGy(folder_polcal, src='3C147', save_sol=True):
-    fn_spec = basedir+'/stokes_uncal_spectra{}.npy'.format(src)
+    fn_spec = folder_polcal+'/stokes_uncal_spectra{}.npy'.format(src)
 
     if os.path.exists(fn_spec):
         stokes_arr_spec = np.load(fn_spec)
@@ -149,14 +155,14 @@ def calibrate_GxGy(folder_polcal, src='3C147', save_sol=True):
             don = np.load(basedir+'/{0}/on/stokes{1}_sb{2}_on.npy'.format(src,
                     ss, sb))
             try:
-                doff = np.load(basedir 
-                        +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src, 
+                doff = np.load(basedir
+                        +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src,
                         ss, sb))
             except:
                 print("There is no polcal off npy file")
                 doff = 0*don
 
-            stokes_arr_spec[ii] = don.mean(-1)-doff.mean(-1)
+            stokes_arr_spec[ii] = (don.mean(-1)-doff.mean(-1))/np.std(doff.mean(0))
 
         if save_sol:
             np.save(fn_spec, stokes_arr_spec)
@@ -166,17 +172,18 @@ def calibrate_GxGy(folder_polcal, src='3C147', save_sol=True):
     U = stokes_arr_spec[2]
     V = stokes_arr_spec[3]
 
-    xy = U + 1j*V
+#   xy = U + 1j*V
 
     if save_sol:
-        np.save(basedir+'/bandpass.npy', bandpass)
-        np.save(basedir+'/xy_phase.npy', np.angle(xy))
+        np.save(basedir+'/bandpass_{}.npy'.format(src), bandpass)
+#        np.save(basedir+'/xy_phase.npy', np.angle(xy))
 
     return stokes_arr_spec, bandpass, np.angle(xy)
 
-def calibrate_linpol(basedir, src='3C286', sb=35, save_sol=True):
-    """ This function should get both bandpass calibration and 
-        a polarisation calibration from some linearly polarised 
+def calibrate_linpol(basedir, src='3C286', sb=35, save_bandpass=True, 
+                     save_xyphase=True):
+    """ This function should get both bandpass calibration and
+        a polarisation calibration from some linearly polarised
         point source (usually 3C286)
     """
     alpha_dict = {'3C286' : 0.51,
@@ -192,21 +199,14 @@ def calibrate_linpol(basedir, src='3C286', sb=35, save_sol=True):
             assert os.path.exists(fn_), "Missing {}. Try using -sb?".format(fn_)
             don = np.load(fn_)
             try:
-                doff = np.load(basedir 
-                        +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src, 
+                doff = np.load(basedir
+                        +'/{0}/off/stokes{1}_sb{2}_off.npy'.format(src,
                         ss, sb))
             except:
                 print("There is no polcal off npy file")
                 doff = 0*don
-        # arr_list, pulse_sample = make_iquv_arr(dpath, rebin_time=1, 
-        #                                            rebin_freq=1, dm=0, trans=False,
-        #                                            RFI_clean=True)
-        # stokes_arr = np.concatenate(arr_list, axis=0)
-        # stokes_arr = stokes_arr.reshape(4, NFREQ, -1)
-        # stokes_arr_spec = stokes_arr.mean(-1)
-            stokes_arr_spec[ii] = don.mean(-1)-doff.mean(-1)
+            stokes_arr_spec[ii] = (don.mean(-1)-doff.mean(-1))/np.std(doff.mean(0))
 
-        if save_sol:
             np.save(fn_spec, stokes_arr_spec)
 
     I = stokes_arr_spec[0]
@@ -218,15 +218,65 @@ def calibrate_linpol(basedir, src='3C286', sb=35, save_sol=True):
 
     bandpass = get_bandpass(I, alpha=alpha_dict[src])
 
-    if save_sol:
-        np.save(basedir+'/bandpass.npy', bandpass)
-        np.save(basedir+'/xy_phase.npy', np.angle(xy))
+    if save_bandpass:
+        np.save(basedir+'/bandpass_{}.npy'.format(src), bandpass)
+    if save_xyphase:
+        np.save(basedir+'/xy_phase_{}.npy'.format(src), np.angle(xy))
 
     return stokes_arr_spec, bandpass, np.angle(xy)
 
+def xy_gain_ratio(stokes_arr_unpol, fngxgy_out=None):
+    """ Estimate the ratio of X pol gain to Y pol gain
+    using an unpolarised point source like 3C147.
+    """
+    if len(stokes_arr_unpol.shape)==3:
+        stokes_arr_unpol = stokes_arr_unpol.mean(-1)
+    elif len(stokes_arr_unpol.shape)==1:
+        print("Stokes array should be length 2 or 3 (4, nfreq, ntime)")
+        exit()
+
+    I = stokes_arr_unpol[0]
+    Q = stokes_arr_unpol[1]
+    fgxgy = (I-Q)/(I+Q)
+    # replace zeros, nans, and np.inf with 1
+    fgxgy[fgxgy==0] = 1.
+    fgxgy[fgxgy==np.inf] = 1.
+    fgxgy[fgxgy==np.nan] = 1.
+
+    if fngxgy_out is not None:
+        np.save(fngxgy_out, fgxgy)
+    else:
+        print("Gain array cannot be saved, filename not defined")
+
+    return fgxgy
+
+def calibrate(stokes_arr, xyphase, fn_GxGy):
+
+    if type(xyphase)==str:
+        xyphase = np.load(xyphase)[..., None]
+    elif len(xyphase.shape)==1:
+        xyphase = xyphase[:, None]
+
+    if len(stokes_arr.shape)==2:
+        stokes_arr = stokes_arr[..., None]
+
+    stokes_arr_out = np.zeros_like(stokes_arr)
+
+    I, Q, U, V = stokes_arr[0], stokes_arr[1], stokes_arr[2], stokes_arr[3]
+    xy_data = U + 1j*V
+    xy_data *= np.exp(-1j*xyphase)
+    
+    stokes_arr_cal_IQ = unleak_IQ(stokes_arr, fn_GxGy)[0]
+    stokes_arr_out[0] = stokes_arr_cal_IQ[0]
+    stokes_arr_out[1] = stokes_arr_cal_IQ[1]
+    stokes_arr_out[2] = xy_data.real
+    stokes_arr_out[3] = xy_data.imag
+    
+    return stokes_arr_out
+
 def unleak_IQ(stokes_arr, fn_GxGy):
-    """ Take array of gain ratios (fn_GxGy, either 
-    path or numpy array) and remove leakage from 
+    """ Take array of gain ratios (fn_GxGy, either
+    path or numpy array) and remove leakage from
     I to Q.
     """
 
@@ -252,7 +302,7 @@ def unleak_IQ(stokes_arr, fn_GxGy):
     Pobs[1,1] = stokes_arr[0]-stokes_arr[1] # I-Q
 
     for ii in xrange(nfreq):
-        # Construct rotation matrix 
+        # Construct rotation matrix
         M = np.array([[1,0],[0,fGxGy[ii]]])
         Minv = np.linalg.inv(M)
         # Derotate Q/I
@@ -263,10 +313,10 @@ def unleak_IQ(stokes_arr, fn_GxGy):
     stokes_arr_cal[2] = stokes_arr[2]
     stokes_arr_cal[3] = stokes_arr[3]
 
-    for ii in range(4):
-        stokes_arr_cal[ii] -= np.median(stokes_arr_cal[ii])
-        stokes_arr_cal[ii] /= np.std(np.mean(stokes_arr_cal[ii],axis=0))
-    
+#    for ii in range(4):
+#        stokes_arr_cal[ii] -= np.median(stokes_arr_cal[ii])
+#        stokes_arr_cal[ii] /= np.std(np.mean(stokes_arr_cal[ii],axis=0))
+
     stokes_arr_cal[np.isnan(stokes_arr_cal)] = 0.0
 
     return stokes_arr_cal, fGxGy
@@ -293,16 +343,16 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
                   range(821,830)+range(1530,1536)
         use_ind_xy = np.delete(use_ind_xy, mask_xy)
 
-#    xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy], 
+#    xy_cal = np.poly1d(np.polyfit(freq_arr[use_ind_xy],
 #                    xy_phase[use_ind_xy], 14))(freq_arr)
 
     print("Removing polyfit: test")
-    xy_cal = np.zeros([xy_phase.shape[0]])                
+    xy_cal = np.zeros([xy_phase.shape[0]])
     xy_cal[use_ind_xy] = xy_phase[use_ind_xy]
 
     for ii in range(4):
         stokes_arr[ii] -= np.median(stokes_arr[ii], keepdims=True, axis=-1)
-    # Get FRB stokes I spectrum 
+    # Get FRB stokes I spectrum
     I, Q, U, V = stokes_arr[0], stokes_arr[1], stokes_arr[2], stokes_arr[3]
     xy_data = U + 1j*V
     xy_data *= np.exp(-1j*xy_cal[:, None])
@@ -321,19 +371,19 @@ def xy_correct(stokes_arr, fn_xy_phase, plot=False, clean=False):
     return stokes_arr_cal
 
 def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
-    """ Create complex xy spectrum from U/V. Find phase 
-    such that flucations in V are minimized. Derotate xy 
-    and return calibrated U/V. 
+    """ Create complex xy spectrum from U/V. Find phase
+    such that flucations in V are minimized. Derotate xy
+    and return calibrated U/V.
 
     Parameters:
     -----------
     arr_U : array
         (nfreq, ntime)
-    arr_V : array 
+    arr_V : array
         (nfreq, ntime)
-    pulse_sample: int 
-        time sample with pulse 
-    pulse_width : int 
+    pulse_sample: int
+        time sample with pulse
+    pulse_width : int
         number of samples to average over in time
 
     Returns:
@@ -358,7 +408,7 @@ def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
         xy_rot = xy_pulse * np.exp(-1j*phi)
         phase_std.append(np.std(xy_rot.imag))
 
-    # Assume best fit phase is the one that minimizes 
+    # Assume best fit phase is the one that minimizes
     # oscillation in V
     phi_bf = phis[np.argmin(np.array(phase_std))]
     xy_cal = xy_pulse*np.exp(-1j*phi_bf)
@@ -366,7 +416,7 @@ def derotate_UV(arr_U, arr_V, pulse_sample=None, pulse_width=1):
 
     return Ucal, Vcal, xy_cal, phi_bf
 
-def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4, 
+def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4,
                 nrm=5000, nphi=500, mask=None, plot=False):
     """ stokes vec should be (4, NFREQ) array
     """
@@ -394,7 +444,7 @@ def faraday_fit(stokes_vec, RMmin=-1e4, RMmax=1e4,
         fig = plt.figure()
         plt.subplot(411)
         plt.plot(freq_arr[use_ind], stokes_vec[0][use_ind],'.')
-        plt.plot(freq_arr[mask], stokes_vec[0][mask],'.')        
+        plt.plot(freq_arr[mask], stokes_vec[0][mask],'.')
         plt.plot(freq_arr, Ifit, color='k')
         plt.ylim(Ifit[use_ind].max()*1.1, Ifit[use_ind].min()*0.9)
         plt.legend(["Stokes I","Mask","Fit"])
@@ -432,7 +482,7 @@ def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 
     if pulse_sample is None:
         pulse_sample = np.argmax(arr[0].mean(0))
-    
+
     if len(arr.shape)==3:
         if pulse_width==1:
             arr_spectra = arr[:, :, pulse_sample]
@@ -447,7 +497,7 @@ def plot_raw_data(arr, pulse_sample=None, pulse_width=1):
 
     plt.subplot(212)
     plt.plot(freq_arr, (np.sqrt(arr_spectra[3]**2 + arr_spectra[1]**2 \
-                    + arr_spectra[2]**2)/arr_spectra[0]), 
+                    + arr_spectra[2]**2)/arr_spectra[0]),
                     color='k', alpha=0.9)
     plt.ylim(0,2)
     plt.xlabel('Freq', fontsize=18)
@@ -470,99 +520,22 @@ def plot_im_raw(arr, pulse_sample=None, pulse_width=1):
 
     fig = plt.figure(figsize=(7,7))
     plt.subplot(221)
-    plt.ylabel('Freq')    
+    plt.ylabel('Freq')
     plt.imshow(I-np.median(I,axis=-1,keepdims=True), aspect='auto', cmap='RdBu')
     plt.subplot(222)
     plt.imshow(Q-np.median(Q,axis=-1,keepdims=True), aspect='auto', cmap='RdBu')
     plt.subplot(223)
     plt.imshow(U-np.median(U,axis=-1,keepdims=True), aspect='auto', cmap='RdBu')
     plt.xlabel('Time')
-    plt.ylabel('Freq')    
+    plt.ylabel('Freq')
     plt.subplot(224)
     plt.imshow(V-np.median(V,axis=-1,keepdims=True), aspect='auto', cmap='RdBu')
     plt.xlabel('Time')
     plt.show()
 
 def solve_muller(Strue, Sobs):
-    """ Solve for Mueller matrix using 
+    """ Solve for Mueller matrix using
     moore-penrose pseudo inverse"""
 
     M = np.matmul(Sobs, np.linalg.pinv(Strue))
     return M
-    
-
-# if __name__=='__main__':
-# #        arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
-#     arr = np.load('dedispersed_data.npy')
-#     pulse_sample = np.argmax(arr[0].mean(0))
-
-#     bp = np.load('./bandpass_from_3c286_alpha-0.54.npy')
-#     xy_phase = np.load('xy_phase_3c286_frequency.npy')
-#     xy_phase[200:400] = 2.6
-#     xy_cal = np.poly1d(np.polyfit(freq_arr, xy_phase, 7))(freq_arr)
-
-#     mm=200
-#     arr = arr[..., pulse_sample-mm:pulse_sample+mm]
-#     for ii in range(4):
-# #                arr[ii] = arr[ii][:, pulse_sample-mm:pulse_sample+mm]
-#             arr[ii] = arr[ii] - arr[ii][:, :150].mean(-1)[:, None]
-            
-#     I = arr[0]/bp[:,None]
-#     Q = arr[1]/bp[:,None]
-#     U = arr[2]/bp[:,None]
-#     V = arr[3]/bp[:,None]
-
-#     I_rebin = I[:, mm-2:mm+2].mean(-1).reshape(-1, 16).mean(-1).repeat(16)
-#     I /= np.median(I[:, mm-2:mm+2].mean(-1))
-
-#     xy_data = (U+1j*V)/I_rebin[:, None]
-#     xy_data_cal = xy_data * np.exp(-1j*xy_cal)[:, None]
-#     Ucal, Vcal = xy_data_cal.real, xy_data_cal.imag
-#     Q /= I_rebin[:, None]
-
-#     #arr, pulse_sample = make_iquv_arr(dpath, rebin_time=1, rebin_freq=1, dm=DM, trans=True)
-#     fig = plt.figure(figsize=(7,9))
-#     grid = plt.GridSpec(7,3,hspace=0.0,wspace=0.0)
-
-#     tt_arr = np.linspace(0, 2*mm*dt*1e3, 2*mm)
-#     plt.subplot(grid[:3, :3])
-
-#     P = Q + 1j*Ucal
-#     P *= np.exp(-2j*RM_guess*lam_arr**2)[:, None]
-
-#     plt.plot(tt_arr, I.mean(0)/I.mean(0).max(), color='k', lw=2., alpha=0.7)        
-#     plt.plot(tt_arr, np.abs(P.mean(0)), '--', color='red', lw=2., alpha=0.75)
-#     plt.plot(tt_arr, np.abs(Vcal).mean(0)-np.abs(Vcal).mean(), '.', color='mediumseagreen', lw=2.)
-#     plt.xlim(tt_arr[150], tt_arr[250])
-# #        plt.plot(tt_arr, P.mean(0).imag)
-#     plt.ylabel('Intensity',labelpad=15, fontsize=13)
-#     plt.legend(['I','L','V'], fontsize=11, loc=1)
-
-#     plt.subplot(grid[4:, :3])
-#     plt.plot(freq_arr[1::2], I[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='k',lw=2, alpha=0.7)
-#     plt.plot(freq_arr[1::2], Q[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C0', alpha=0.65,lw=2)
-#     plt.plot(freq_arr[1::2], Ucal[:, mm-2:mm+2].mean(-1).reshape(-1, 2).mean(-1), color='C1',lw=2, alpha=0.6)
-#     plt.xlabel('Frequency (MHz)', fontsize=13)
-#     plt.ylabel('Intensity',labelpad=15, fontsize=13)
-#     plt.ylim(-1., 3.1)
-#     plt.xlim(1205.0, 1550)
-#     plt.legend(['I','Q','U'], framealpha=1.0, fontsize=11, loc=(0.88, 0.6))
-#     plt.grid('on', alpha=0.25)
-
-#     plt.subplot(grid[3, :3])
-#     plt.plot(tt_arr, 180./np.pi*np.angle(P.mean(0)),'.', color='k')
-#     plt.xlim(tt_arr[150], tt_arr[250])
-#     plt.ylabel('PA (deg)', fontsize=13)
-#     plt.xlabel('Time (ms)', labelpad=1, fontsize=13)
-
-#     plt.tight_layout()
-#     plt.savefig('./FRB191108_polarisation.pdf')
-#     plt.show()
-#     exit()
-# #        plot_raw_data(arr)
-# #        plot_im_raw(arr)
-#     Ucal, Vcal, xy_cal, phi_bf = derotate_UV(arr[2], arr[3], pulse_sample=pulse_sample, pulse_width=1)
-#     print(Ucal.shape, arr[1].shape, xy_cal.shape)
-#     Ucal = xy_cal.real
-#     Qcal, Ucal, P_cal, rm_bf, lam_arr, phase_std, P = derotate_faraday(arr[1], Ucal, pulse_sample=pulse_sample, 
-#         pulse_width=1, RMmin=0.0, RMmax=1e4)
